@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Score record",
+  "description": "One file per channel at data/scores/<handle>.json. Three dimensions come from src/arithmetic.py, three from src/score_ai.py. Every dimension carries a reason so the ranking can be explained.",
+  "type": "object",
+  "required": ["handle", "scored_at", "dimensions", "hard_stop"],
+  "properties": {
+    "handle": { "type": "string" },
+    "scored_at": { "type": "string", "format": "date-time" },
+    "hard_stop": {
+      "type": "boolean",
+      "description": "True disqualifies the channel outright. Disqualified is not the same as ranked lower: these leave the ranked list entirely."
+    },
+    "hard_stop_reason": { "type": ["string", "null"] },
+    "dimensions": {
+      "type": "object",
+      "required": ["audience_relevance", "engagement", "brand_fit", "momentum", "speed_to_activate", "trend_fit"],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(audience_relevance|engagement|brand_fit|momentum|speed_to_activate|trend_fit)$": {
+          "type": "object",
+          "required": ["score", "reason", "source"],
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 10 },
+            "reason": { "type": "string", "description": "One sentence. Shown in the UI when someone asks why a channel ranked where it did." },
+            "source": { "type": "string", "enum": ["arithmetic", "model"] },
+            "evidence": {
+              "type": "array",
+              "description": "Video IDs, timestamps or citations the score was derived from",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

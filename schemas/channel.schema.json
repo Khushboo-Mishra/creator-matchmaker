@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Channel record",
+  "description": "One file per channel at data/channels/<handle>.json. Produced by src/pull.py. This is a contract: do not change a field name without telling the team.",
+  "type": "object",
+  "required": ["handle", "channel_id", "title", "subscribers", "pulled_at", "videos"],
+  "properties": {
+    "handle": { "type": "string", "description": "YouTube handle including the @" },
+    "channel_id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "subscribers": { "type": "integer" },
+    "uploads_playlist_id": { "type": "string" },
+    "pulled_at": { "type": "string", "format": "date-time" },
+    "videos": {
+      "type": "array",
+      "description": "Most recent uploads, newest first, normally 15",
+      "items": {
+        "type": "object",
+        "required": ["video_id", "title", "published_at", "views", "likes", "comments"],
+        "properties": {
+          "video_id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "published_at": { "type": "string", "format": "date-time" },
+          "duration_seconds": { "type": "integer" },
+          "views": { "type": "integer" },
+          "likes": { "type": "integer" },
+          "comments": { "type": "integer" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "sampled_comments": {
+      "type": "array",
+      "description": "Top-level comment text sampled from the three highest-view videos",
+      "items": { "type": "string" }
+    }
+  }
+}

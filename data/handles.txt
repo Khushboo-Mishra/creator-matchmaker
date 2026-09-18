@@ -1,0 +1,5 @@
+# One YouTube handle per line, including the @. Blank lines and # comments ignored.
+# PLACEHOLDER LIST. Replace with the real candidate set, keep the format.
+@example-channel-one
+@example-channel-two
+@example-channel-three
