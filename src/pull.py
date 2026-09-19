@@ -33,9 +33,29 @@ COMMENT_VIDEOS = 3
 COMMENTS_PER_VIDEO = 40
 
 
+class QuotaExceeded(RuntimeError):
+    """The daily quota is gone. Every later call today fails the same way."""
+
+
+def _reason(response):
+    """The machine-readable reason YouTube buries inside the error body."""
+    try:
+        errors = response.json()["error"].get("errors") or [{}]
+        return errors[0].get("reason", "")
+    except (ValueError, KeyError):
+        return ""
+
+
 def _get(endpoint, **params):
     params["key"] = YOUTUBE_API_KEY
     r = requests.get(f"{API}/{endpoint}", params=params, timeout=30)
+    if r.status_code == 403:
+        reason = _reason(r)
+        if reason in ("quotaExceeded", "dailyLimitExceeded"):
+            raise QuotaExceeded(
+                f"{reason}: the daily quota is spent and resets at midnight "
+                f"Pacific. Cached channels in data/channels/ still work."
+            )
     r.raise_for_status()
     return r.json()
 
@@ -151,10 +171,18 @@ def pull(handle):
 
 
 def main():
+    if not YOUTUBE_API_KEY:
+        sys.exit(
+            "YOUTUBE_API_KEY is not set. Copy .env.example to .env and fill it in."
+        )
     handles = sys.argv[1:] or read_handles()
     for h in handles:
         try:
             print(f"ok   {h} -> {pull(h).name}")
+        except QuotaExceeded as exc:
+            # Grinding through the rest of the batch would print the same
+            # failure once per handle and spend nothing but time.
+            sys.exit(f"stop {h}: {exc}")
         except Exception as exc:  # keep going, one bad handle should not stop a batch
             print(f"fail {h}: {exc}")
 
