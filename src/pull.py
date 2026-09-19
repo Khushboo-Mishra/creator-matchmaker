@@ -8,11 +8,18 @@ Quota notes, read before editing:
   cost 1 unit against a separate pool, so resolving by handle is far cheaper
   than searching. Never re-pull during a live demo: read the cached JSON.
 
+  We pull 50 uploads, not 15. A playlistItems page costs 1 unit whether it
+  returns 1 item or 50, and videos.list takes 50 ids in a single call, so the
+  wider window is free. It is needed because speed_to_activate counts uploads
+  in the last 90 days: capped at 15, a daily poster and a twice-weekly poster
+  scored identically. Scoring windows live in arithmetic.py, not here.
+
 Usage:
     python -m src.pull            # every handle in data/handles.txt
     python -m src.pull @somebody  # one handle
 """
 import json
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -21,7 +28,7 @@ import requests
 from .config import CHANNELS, YOUTUBE_API_KEY, read_handles
 
 API = "https://www.googleapis.com/youtube/v3"
-RECENT_VIDEOS = 15
+RECENT_VIDEOS = 50
 COMMENT_VIDEOS = 3
 COMMENTS_PER_VIDEO = 40
 
@@ -47,7 +54,7 @@ def resolve_channel(handle):
 
 
 def recent_video_ids(uploads_playlist_id, limit=RECENT_VIDEOS):
-    """Newest uploads from the uploads playlist. 1 unit per page of 50."""
+    """Newest uploads from the uploads playlist, newest first. 1 unit per page of 50."""
     data = _get(
         "playlistItems",
         part="contentDetails",
@@ -55,6 +62,18 @@ def recent_video_ids(uploads_playlist_id, limit=RECENT_VIDEOS):
         maxResults=min(limit, 50),
     )
     return [i["contentDetails"]["videoId"] for i in data.get("items", [])]
+
+
+_DURATION = re.compile(r"P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?")
+
+
+def _duration_seconds(iso):
+    """ISO 8601 duration to whole seconds. Declared in channel.schema.json."""
+    m = _DURATION.fullmatch(iso or "")
+    if not m:
+        return 0
+    days, hours, minutes, seconds = (int(g or 0) for g in m.groups())
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
 
 
 def video_details(video_ids):
@@ -72,6 +91,9 @@ def video_details(video_ids):
         out.append(
             {
                 "video_id": item["id"],
+                "duration_seconds": _duration_seconds(
+                    item.get("contentDetails", {}).get("duration", "")
+                ),
                 "title": item["snippet"]["title"],
                 "description": item["snippet"].get("description", ""),
                 "published_at": item["snippet"]["publishedAt"],

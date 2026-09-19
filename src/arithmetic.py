@@ -2,7 +2,9 @@
 
 Owner: data lane.
 
-Median, never mean: one viral video should not rescue a dead channel.
+Medians for view counts: one viral video should not rescue a dead channel.
+Engagement is the exception and is a mean, because it averages per-video RATES,
+which are already bounded and far less spiky than raw views. Say so if asked.
 Scores are normalised against FIXED anchors, not against the candidate pool.
 Pool-relative normalisation would mean adding one channel silently changes
 everyone else's score, which is indefensible when someone asks why a ranking moved.
@@ -14,6 +16,14 @@ from datetime import datetime, timezone
 ENGAGEMENT_ANCHOR = 0.08      # (likes + comments) / views
 MOMENTUM_ANCHOR = 1.8         # recent median views / prior median views
 UPLOADS_90D_ANCHOR = 26       # roughly twice a week
+
+# pull.py caches 50 uploads. Rate and trend dimensions read a fixed 15-upload
+# window so the number means the same thing on every channel; only
+# speed_to_activate reads the full cache, because it is a frequency count and
+# a 15-upload cap made it impossible to score above 5.8.
+RATE_WINDOW = 15
+MOMENTUM_RECENT = 5
+MOMENTUM_PRIOR = 10
 
 
 def _clamp10(value, anchor):
@@ -29,7 +39,7 @@ def engagement(videos):
     """
     rates = [
         (v["likes"] + v["comments"]) / v["views"]
-        for v in videos
+        for v in videos[:RATE_WINDOW]
         if v.get("views")
     ]
     if not rates:
@@ -43,22 +53,32 @@ def engagement(videos):
 
 def momentum(videos):
     """Median views of the last 5 uploads over the median of the 10 before."""
-    if len(videos) < 15:
-        return 0.0, f"needs 15 uploads to compare, found {len(videos)}"
-    recent = statistics.median(v["views"] for v in videos[:5])
-    prior = statistics.median(v["views"] for v in videos[5:15])
+    if len(videos) < RATE_WINDOW:
+        return 0.0, (
+            f"not measurable: needs {RATE_WINDOW} uploads to compare, "
+            f"found {len(videos)}"
+        )
+    recent = statistics.median(v["views"] for v in videos[:MOMENTUM_RECENT])
+    prior = statistics.median(
+        v["views"] for v in videos[MOMENTUM_RECENT:RATE_WINDOW]
+    )
     if prior == 0:
         return 0.0, "no prior views to compare against"
     ratio = recent / prior
     direction = "rising" if ratio > 1 else "fading"
     return (
         _clamp10(ratio, MOMENTUM_ANCHOR),
-        f"last 5 uploads median {ratio:.2f}x the previous 10, {direction}",
+        f"last {MOMENTUM_RECENT} uploads median {ratio:.2f}x "
+        f"the previous {MOMENTUM_PRIOR}, {direction}",
     )
 
 
 def speed_to_activate(videos):
-    """Uploads in the last 90 days. Weekly posters can react to a trend, monthly cannot."""
+    """Uploads in the last 90 days. Weekly posters can react to a trend, monthly cannot.
+
+    Reads every cached upload, not the 15-upload window the rate dimensions use:
+    a frequency count capped at 15 cannot reach its own anchor of 26.
+    """
     now = datetime.now(timezone.utc)
     count = 0
     for v in videos:
