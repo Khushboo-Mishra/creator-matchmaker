@@ -14,9 +14,19 @@ Quota notes, read before editing:
   in the last 90 days: capped at 15, a daily poster and a twice-weekly poster
   scored identically. Scoring windows live in arithmetic.py, not here.
 
+Input, in order of preference:
+  data/discovered_candidates.json  written once by src/discover.py and committed
+  data/handles.txt                 manual fallback, same format as before
+
+Discovery runs on its own and costs roughly 800 quota units because it uses
+search.list. This module never searches: it resolves a candidate by channel id
+at 1 unit, exactly as it resolves a handle at 1 unit. Re-running the pull does
+not re-run discovery.
+
 Usage:
-    python -m src.pull            # every handle in data/handles.txt
-    python -m src.pull @somebody  # one handle
+    python -m src.pull                    # discovered candidates, else handles.txt
+    python -m src.pull @somebody          # one handle
+    python -m src.pull UCxxxxxxxxxxxxxx   # one channel id
 """
 import json
 import re
@@ -25,7 +35,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from .config import CHANNELS, YOUTUBE_API_KEY, read_handles
+from .config import CHANNELS, DISCOVERED_FILE, YOUTUBE_API_KEY, read_handles
 
 API = "https://www.googleapis.com/youtube/v3"
 RECENT_VIDEOS = 50
@@ -70,6 +80,19 @@ def resolve_channel(handle):
     items = data.get("items") or []
     if not items:
         raise LookupError(f"no channel for handle {handle}")
+    return items[0]
+
+
+def resolve_channel_id(channel_id):
+    """Channel id to channel metadata. 1 quota unit, same as a handle."""
+    data = _get(
+        "channels",
+        part="snippet,statistics,contentDetails",
+        id=channel_id,
+    )
+    items = data.get("items") or []
+    if not items:
+        raise LookupError(f"no channel for id {channel_id}")
     return items[0]
 
 
@@ -149,8 +172,30 @@ def sample_comments(videos, n_videos=COMMENT_VIDEOS, per_video=COMMENTS_PER_VIDE
     return out
 
 
-def pull(handle):
-    ch = resolve_channel(handle)
+def _handle_of(ch, fallback=None):
+    """The channel's @handle.
+
+    Resolving by id gives us customUrl, which is the handle. Keeping every
+    record keyed by handle is what lets data/scores/<handle>.json pair up with
+    data/channels/<handle>.json, so we derive it rather than storing null.
+    A channel with no custom url falls back to its id, which is ugly but is
+    still a string, still unique, and still pairs.
+    """
+    custom = (ch.get("snippet", {}).get("customUrl") or "").strip()
+    if custom:
+        return custom if custom.startswith("@") else f"@{custom}"
+    return fallback or ch["id"]
+
+
+def pull(identifier, discovery=None):
+    """Cache one channel. Takes an @handle or a UC... channel id."""
+    if identifier.startswith("@"):
+        ch = resolve_channel(identifier)
+        handle = _handle_of(ch, fallback=identifier)
+    else:
+        ch = resolve_channel_id(identifier)
+        handle = _handle_of(ch)
+
     uploads = ch["contentDetails"]["relatedPlaylists"]["uploads"]
     videos = video_details(recent_video_ids(uploads))
     record = {
@@ -164,10 +209,34 @@ def pull(handle):
         "videos": videos,
         "sampled_comments": sample_comments(videos),
     }
+    if discovery:
+        # Why this creator is in the candidate set at all. Declared in
+        # channel.schema.json so it is a contract, not a stray field.
+        record["discovery"] = {"matches": discovery.get("matches", [])}
     CHANNELS.mkdir(parents=True, exist_ok=True)
     path = CHANNELS / f"{handle.lstrip('@')}.json"
     path.write_text(json.dumps(record, indent=2, ensure_ascii=False))
     return path
+
+
+def read_discovered_candidates():
+    """Candidates from the committed discovery run. Empty if it has not been run."""
+    if not DISCOVERED_FILE.exists():
+        return []
+    data = json.loads(DISCOVERED_FILE.read_text(encoding="utf-8"))
+    return data.get("candidates", [])
+
+
+def _targets(argv):
+    """What to pull, and the discovery evidence for each, in order of preference."""
+    if argv:
+        return [(arg, None) for arg in argv]
+    discovered = read_discovered_candidates()
+    if discovered:
+        print(f"{len(discovered)} discovered candidates from {DISCOVERED_FILE.name}")
+        return [(c["channel_id"], c) for c in discovered]
+    print(f"no discovery cache, falling back to {DISCOVERED_FILE.parent.name}/handles.txt")
+    return [(h, None) for h in read_handles()]
 
 
 def main():
@@ -175,16 +244,16 @@ def main():
         sys.exit(
             "YOUTUBE_API_KEY is not set. Copy .env.example to .env and fill it in."
         )
-    handles = sys.argv[1:] or read_handles()
-    for h in handles:
+    for identifier, discovery in _targets(sys.argv[1:]):
+        label = (discovery or {}).get("channel_title", identifier)
         try:
-            print(f"ok   {h} -> {pull(h).name}")
+            print(f"ok   {label} -> {pull(identifier, discovery).name}")
         except QuotaExceeded as exc:
             # Grinding through the rest of the batch would print the same
             # failure once per handle and spend nothing but time.
-            sys.exit(f"stop {h}: {exc}")
+            sys.exit(f"stop {label}: {exc}")
         except Exception as exc:  # keep going, one bad handle should not stop a batch
-            print(f"fail {h}: {exc}")
+            print(f"fail {label}: {exc}")
 
 
 if __name__ == "__main__":
