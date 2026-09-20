@@ -31,6 +31,25 @@
         }
       }
     },
+    "discovery": {
+      "type": "object",
+      "description": "Why this channel is a candidate. Present only when it came from a discover.py run rather than handles.txt. Optional: a hand-listed channel has no discovery evidence and is not less valid for it.",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "description": "Each search query that surfaced this channel, with the video that matched",
+          "items": {
+            "type": "object",
+            "required": ["query", "video_id"],
+            "properties": {
+              "query": { "type": "string" },
+              "video_id": { "type": "string" },
+              "video_title": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
     "sampled_comments": {
       "type": "array",
       "description": "Top-level comment text sampled from the three highest-view videos",
