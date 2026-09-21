@@ -27,6 +27,13 @@
         "null"
       ]
     },
+    "warnings": {
+      "type": "array",
+      "description": "Non-blocking policy signals for a human to check, e.g. a possible unsupported claim or an unconfirmed spoken disclosure. Never disqualifies a channel on its own.",
+      "items": {
+        "type": "string"
+      }
+    },
     "dimensions": {
       "type": "object",
       "required": [

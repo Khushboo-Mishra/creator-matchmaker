@@ -2,10 +2,11 @@
 
 Owner: shared, touches build_scores.py, flag changes to the team before pushing.
 
-Some disqualifications are more reliable and easier to defend on stage as plain
-code than as model judgement. This reads the same config/rules.md src/score_ai.py
-does, but decides purely with string matching, so a rejection can always be
-explained in one sentence with no model in the loop.
+Hard stops are reserved for checks backed by concrete evidence: a named
+competitor, or a counted fraction of low-signal comments. Anything that needs
+human judgement instead -- whether a sentence amounts to an unsupported claim,
+whether a spoken disclosure happened on camera -- comes back as a warning, so
+a wrong guess here can never silently disqualify a good channel.
 """
 import re
 
@@ -22,9 +23,12 @@ GENERIC_COMMENTS = {
 
 EMOJI_PATTERN = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF]+")
 
-# "Any claim that/about ..." style lead-ins stripped so the rest of the bullet
-# can be matched as a phrase, since nobody writes video copy as full sentences.
-LEAD_INS = ("any claim that ", "any claim about ", "any comparison naming ", "any implication that ")
+# Short, common words that would overlap by coincidence rather than by echoing a claim.
+STOPWORDS = {
+    "about", "after", "before", "claim", "claims", "creator", "creators",
+    "genuinely", "other", "their", "these", "those", "unsupported", "using",
+    "which", "while", "would", "could", "should",
+}
 
 
 def _section(rules_text, heading):
@@ -42,16 +46,19 @@ def _bullets(section_text):
     ]
 
 
-def _extract_banned_phrases(rules_text):
-    phrases = []
-    for bullet in _bullets(_section(rules_text, "Banned claims")):
-        low = bullet.lower()
-        for lead in LEAD_INS:
-            if low.startswith(lead):
-                low = low[len(lead):]
-                break
-        phrases.append(low.rstrip("."))
-    return phrases
+def _keywords(text):
+    """Distinctive words (5+ letters, minus common stopwords), for a soft overlap check."""
+    return {w for w in re.findall(r"[a-z']+", text.lower()) if len(w) >= 5 and w not in STOPWORDS}
+
+
+def _extract_banned_claims(rules_text):
+    """Raw banned-claim bullets from rules.md.
+
+    The real rules describe judgement calls ("unsupported claims about AI
+    capabilities") that no string match can verify reliably, so these feed a
+    soft keyword-overlap warning, never a hard stop.
+    """
+    return _bullets(_section(rules_text, "Banned claims"))
 
 
 def _extract_competitors(rules_text):
@@ -59,13 +66,9 @@ def _extract_competitors(rules_text):
     return [b.lower() for b in _bullets(_section(rules_text, "Competitors"))]
 
 
-def _looks_sponsored(description):
-    low = description.lower()
+def _mentions_sponsorship(text):
+    low = text.lower()
     return any(kw in low for kw in SPONSOR_KEYWORDS)
-
-
-def _has_disclosure(description):
-    return description.strip().lower().startswith("#ad")
 
 
 def _is_low_signal_comment(comment):
@@ -79,68 +82,88 @@ def _is_low_signal_comment(comment):
     return normalized in GENERIC_COMMENTS
 
 
-def missing_disclosure(videos):
-    """Sponsored-looking descriptions that don't open with #ad, per the disclosure rule."""
+def disclosure_warnings(videos):
+    """Sponsored-looking videos, flagged for a human to confirm the required
+    in-video spoken disclosure actually happened: that can't be read from text.
+    """
     return [
-        f'video {v.get("video_id", "?")} looks sponsored but its description '
-        "does not open with #ad"
+        f'video {v.get("video_id", "?")} mentions a sponsorship; confirm the '
+        "required spoken disclosure appears in the video itself"
         for v in videos
-        if _looks_sponsored(v.get("description", "")) and not _has_disclosure(v.get("description", ""))
+        if _mentions_sponsorship(f"{v.get('title', '')} {v.get('description', '')}")
     ]
 
 
-def banned_phrase_matches(videos, rules_text):
-    """Titles or descriptions that match a banned claim from rules.md."""
-    reasons = []
-    phrases = _extract_banned_phrases(rules_text)
-    for v in videos:
-        text = f"{v.get('title', '')} {v.get('description', '')}".lower()
-        for phrase in phrases:
-            if phrase and phrase in text:
-                reasons.append(f'video {v.get("video_id", "?")} matches a banned claim: "{phrase}"')
-                break
-    return reasons
+def banned_claim_warnings(videos, rules_text):
+    """Videos that share distinctive words with a banned-claims bullet.
+
+    A soft signal for a human to check, not a hard stop: word overlap is not
+    the same as verifying a claim was actually made.
+    """
+    warnings = []
+    for bullet in _extract_banned_claims(rules_text):
+        bullet_words = _keywords(bullet)
+        if not bullet_words:
+            continue
+        for v in videos:
+            text = f"{v.get('title', '')} {v.get('description', '')}"
+            overlap = bullet_words & _keywords(text)
+            if len(overlap) >= 2:
+                warnings.append(
+                    f'video {v.get("video_id", "?")} shares wording with a banned '
+                    f'claim ("{bullet.strip().rstrip(".;")}"): {", ".join(sorted(overlap))}'
+                )
+    return warnings
 
 
-def competitor_mentions(videos, rules_text):
-    """Titles or descriptions naming a listed competitor."""
-    reasons = []
-    names = _extract_competitors(rules_text)
-    for v in videos:
-        text = f"{v.get('title', '')} {v.get('description', '')}".lower()
-        for name in names:
+def competitor_hard_stops(videos, rules_text):
+    """Hard stop candidates, each with the evidence backing it: a named competitor."""
+    hits = []
+    for name in _extract_competitors(rules_text):
+        for v in videos:
+            text = f"{v.get('title', '')} {v.get('description', '')}".lower()
             if name and name in text:
-                reasons.append(f'video {v.get("video_id", "?")} mentions competitor "{name}"')
-                break
-    return reasons
+                hits.append({
+                    "reason": f'video {v.get("video_id", "?")} mentions competitor "{name}"',
+                    "evidence": [v.get("video_id", "?")],
+                })
+    return hits
 
 
-def fake_engagement(sampled_comments):
-    """A reason string when most sampled comments are emoji-only or generic, else None."""
+def fake_engagement_hard_stop(sampled_comments):
+    """A hard stop candidate when most sampled comments are emoji-only or
+    generic, with the offending comments as evidence. None if not triggered.
+    """
     if not sampled_comments:
         return None
     low_signal = [c for c in sampled_comments if _is_low_signal_comment(c)]
     if len(low_signal) / len(sampled_comments) <= 0.5:
         return None
-    return f"{len(low_signal)}/{len(sampled_comments)} sampled comments are emoji-only or generic"
+    return {
+        "reason": f"{len(low_signal)}/{len(sampled_comments)} sampled comments are emoji-only or generic",
+        "evidence": low_signal,
+    }
 
 
 def evaluate(channel_record, rules_text):
-    """Run every deterministic check and merge them into one hard_stop decision.
+    """Run every deterministic check and merge the results.
 
     Combined with the model's own hard_stop in build_scores.py: either one
-    stopping is enough to disqualify the channel.
+    stopping is enough to disqualify the channel. Warnings never disqualify;
+    they're surfaced for a human to look at.
     """
     videos = channel_record.get("videos", [])
-    reasons = []
-    reasons += missing_disclosure(videos)
-    reasons += banned_phrase_matches(videos, rules_text)
-    reasons += competitor_mentions(videos, rules_text)
-    fake_reason = fake_engagement(channel_record.get("sampled_comments", []))
-    if fake_reason:
-        reasons.append(fake_reason)
+
+    hard_stops = list(competitor_hard_stops(videos, rules_text))
+    fake = fake_engagement_hard_stop(channel_record.get("sampled_comments", []))
+    if fake:
+        hard_stops.append(fake)
+
+    warnings = disclosure_warnings(videos) + banned_claim_warnings(videos, rules_text)
 
     return {
-        "hard_stop": bool(reasons),
-        "hard_stop_reason": "; ".join(reasons) if reasons else None,
+        "hard_stop": bool(hard_stops),
+        "hard_stop_reason": "; ".join(h["reason"] for h in hard_stops) if hard_stops else None,
+        "warnings": warnings,
     }
+

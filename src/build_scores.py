@@ -21,6 +21,7 @@ def build(channel_path, use_model=True):
     # Policy gate runs regardless of --no-model: it's plain code, not a model call.
     gate = policy.evaluate(record, rules_text)
     reasons = [gate["hard_stop_reason"]] if gate["hard_stop"] else []
+    warnings = list(gate["warnings"])
 
     if use_model:
         from . import score_ai
@@ -40,6 +41,7 @@ def build(channel_path, use_model=True):
         "scored_at": datetime.now(timezone.utc).isoformat(),
         "hard_stop": bool(reasons),
         "hard_stop_reason": "; ".join(reasons) if reasons else None,
+        "warnings": warnings,
         "dimensions": dimensions,
     }
     SCORES.mkdir(parents=True, exist_ok=True)
