@@ -1,0 +1,24 @@
+{
+    "handle": "@clean-skincare-channel",
+    "channel_id": "UCclean0001",
+    "title": "Clean Skincare Channel",
+    "description": "Ingredient-focused skincare reviews.",
+    "subscribers": 85000,
+    "pulled_at": "2026-09-01T00:00:00Z",
+    "videos": [
+        {
+            "video_id": "cln001",
+            "title": "My honest SPF 40 review",
+            "description": "Testing mineral sunscreens for daily wear, filmed independently.",
+            "published_at": "2026-08-20T00:00:00Z",
+            "views": 50000,
+            "likes": 3000,
+            "comments": 400
+        }
+    ],
+    "sampled_comments": [
+        "finally a review that talks about the white cast",
+        "this is exactly the kind of spf breakdown i needed",
+        "does this work under makeup?"
+    ]
+}

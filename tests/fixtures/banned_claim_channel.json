@@ -1,0 +1,23 @@
+{
+    "handle": "@overclaiming-channel",
+    "channel_id": "UCbanned0001",
+    "title": "Overclaiming Beauty",
+    "description": "Fast-result skincare claims.",
+    "subscribers": 40000,
+    "pulled_at": "2026-09-01T00:00:00Z",
+    "videos": [
+        {
+            "video_id": "ban001",
+            "title": "How This Serum Is Reversing Signs Of Ageing Overnight",
+            "description": "You will look ten years younger by morning.",
+            "published_at": "2026-08-15T00:00:00Z",
+            "views": 20000,
+            "likes": 1000,
+            "comments": 90
+        }
+    ],
+    "sampled_comments": [
+        "wow this really works",
+        "my skin looks amazing now"
+    ]
+}
