@@ -1,0 +1,44 @@
+{
+    "handle": "@sample-channel",
+    "scored_at": "2026-01-15T12:00:00Z",
+    "hard_stop": false,
+    "hard_stop_reason": null,
+    "dimensions": {
+        "audience_relevance": {
+            "score": 8.5,
+            "reason": "Comments repeatedly ask about ingredients and SPF, matching the campaign's target audience.",
+            "source": "model",
+            "evidence": []
+        },
+        "engagement": {
+            "score": 7.2,
+            "reason": "6.30% engagement across the last 15 uploads.",
+            "source": "arithmetic",
+            "evidence": []
+        },
+        "brand_fit": {
+            "score": 9.0,
+            "reason": "Tone and past sponsorships are calm and factual, with no banned claims in recent videos.",
+            "source": "model",
+            "evidence": []
+        },
+        "momentum": {
+            "score": 6.4,
+            "reason": "Last 5 uploads median 1.15x the previous 10, rising.",
+            "source": "arithmetic",
+            "evidence": []
+        },
+        "speed_to_activate": {
+            "score": 8.1,
+            "reason": "21 uploads in the last 90 days.",
+            "source": "arithmetic",
+            "evidence": []
+        },
+        "trend_fit": {
+            "score": 7.8,
+            "reason": "Recent titles reference ingredient breakdowns and SPF routines, overlapping with the campaign's claims.",
+            "source": "model",
+            "evidence": []
+        }
+    }
+}

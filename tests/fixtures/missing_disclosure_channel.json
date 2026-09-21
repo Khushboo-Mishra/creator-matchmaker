@@ -1,0 +1,23 @@
+{
+    "handle": "@undisclosed-ad-channel",
+    "channel_id": "UCundisclosed0001",
+    "title": "Undisclosed Ad Channel",
+    "description": "Product placements without a heads-up.",
+    "subscribers": 60000,
+    "pulled_at": "2026-09-01T00:00:00Z",
+    "videos": [
+        {
+            "video_id": "ad001",
+            "title": "My new skincare routine",
+            "description": "sponsored by BrandX. Use code SAVE10 for a discount.",
+            "published_at": "2026-08-10T00:00:00Z",
+            "views": 30000,
+            "likes": 1500,
+            "comments": 120
+        }
+    ],
+    "sampled_comments": [
+        "love this routine",
+        "where can i buy this"
+    ]
+}

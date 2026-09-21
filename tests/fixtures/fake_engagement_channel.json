@@ -1,0 +1,26 @@
+{
+    "handle": "@fake-engagement-channel",
+    "channel_id": "UCfake0001",
+    "title": "Fake Engagement Channel",
+    "description": "Large audience, suspiciously flat comment sections.",
+    "subscribers": 120000,
+    "pulled_at": "2026-09-01T00:00:00Z",
+    "videos": [
+        {
+            "video_id": "fe001",
+            "title": "Unboxing haul",
+            "description": "Today's haul video.",
+            "published_at": "2026-08-05T00:00:00Z",
+            "views": 200000,
+            "likes": 15000,
+            "comments": 3000
+        }
+    ],
+    "sampled_comments": [
+        "😍😍",
+        "nice",
+        "cool",
+        "🔥",
+        "this actually helped me pick a foundation shade"
+    ]
+}
