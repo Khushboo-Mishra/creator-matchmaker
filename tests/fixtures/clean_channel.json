@@ -1,15 +1,15 @@
 {
-    "handle": "@clean-skincare-channel",
+    "handle": "@clean-creative-channel",
     "channel_id": "UCclean0001",
-    "title": "Clean Skincare Channel",
-    "description": "Ingredient-focused skincare reviews.",
+    "title": "Clean Creative Channel",
+    "description": "Documenting real production workflows.",
     "subscribers": 85000,
     "pulled_at": "2026-09-01T00:00:00Z",
     "videos": [
         {
             "video_id": "cln001",
-            "title": "My honest SPF 40 review",
-            "description": "Testing mineral sunscreens for daily wear, filmed independently.",
+            "title": "How I plan a short film from idea to storyboard",
+            "description": "Walking through my process for this project, filmed independently.",
             "published_at": "2026-08-20T00:00:00Z",
             "views": 50000,
             "likes": 3000,
@@ -17,8 +17,8 @@
         }
     ],
     "sampled_comments": [
-        "finally a review that talks about the white cast",
-        "this is exactly the kind of spf breakdown i needed",
-        "does this work under makeup?"
+        "this is such a clean way to organize a moodboard",
+        "i started sketching boards after watching this",
+        "how do you share planning boards with collaborators?"
     ]
 }
