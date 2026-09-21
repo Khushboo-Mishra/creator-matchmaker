@@ -13,6 +13,7 @@ Three things that matter more than prompt wording:
 """
 import json
 import time
+from functools import lru_cache
 
 import requests
 
@@ -103,9 +104,13 @@ CAMPAIGN RULES
 """
 
 
+@lru_cache(maxsize=None)
 def ground_trend_topics(rules_text):
     """Grounded call for rising topics and their citations.
 
+    Cached per rules_text: trends don't change between channels scored in the
+    same run, so this makes one search call per run, not one per channel, and
+    stability.py's repeated score() calls reuse it instead of re-grounding.
     A separate call from the JSON-forced scoring call below: combining the
     google_search tool with a responseSchema is preview-only and limited to
     the Gemini 3 model family, and GEMINI_MODEL is pinned to gemini-2.5-flash,
