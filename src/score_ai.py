@@ -52,10 +52,8 @@ RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
         **{d: dim_schema for d in MODEL_DIMS},
-        "hard_stop": {"type": "boolean"},
-        "hard_stop_reason": {"type": "string"},
     },
-    "required": [*MODEL_DIMS, "hard_stop"],
+    "required": [*MODEL_DIMS],
 }
 
 CALIBRATION = """
@@ -176,11 +174,6 @@ Score three dimensions 0 to 10:
                       currently rising in this category? Use the rising
                       topics above if present.
 
-Set hard_stop to true only if the channel's content directly conflicts with
-the campaign rules above (for example, it makes one of the banned claims
-itself, or its content is incompatible with the brand at any price). Give
-hard_stop_reason when hard_stop is true.
-
 {CALIBRATION}
 
 Give every score a single sentence of reasoning that cites something concrete
@@ -190,7 +183,7 @@ as evidence. Never invent a fact you were not given.
 
 
 def score(channel_record, rules_text=None):
-    """Return {"dimensions": ..., "hard_stop": ..., "hard_stop_reason": ...} for one channel."""
+    """Return the three model-scored dimensions for one channel."""
     rules_text = rules_text if rules_text is not None else RULES_FILE.read_text()
     trend_context, citations = ground_trend_topics(rules_text)
     body = {
@@ -226,8 +219,6 @@ def score(channel_record, rules_text=None):
         )
     return {
         "dimensions": dimensions,
-        "hard_stop": parsed["hard_stop"],
-        "hard_stop_reason": parsed.get("hard_stop_reason"),
     }
 
 

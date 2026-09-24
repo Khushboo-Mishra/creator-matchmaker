@@ -1,8 +1,6 @@
 {
     "handle": "@sample-channel",
     "scored_at": "2026-01-15T12:00:00Z",
-    "hard_stop": false,
-    "hard_stop_reason": null,
     "dimensions": {
         "audience_relevance": {
             "score": 8.5,

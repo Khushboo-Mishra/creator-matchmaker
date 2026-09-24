@@ -51,7 +51,7 @@ class FakeResponse:
         return self._payload
 
 
-def model_payload(dimensions=None, hard_stop=False, hard_stop_reason=None):
+def model_payload(dimensions=None):
     body = dict(
         dimensions
         or {
@@ -60,10 +60,15 @@ def model_payload(dimensions=None, hard_stop=False, hard_stop_reason=None):
             "trend_fit": {"score": 6, "reason": "r3", "evidence": []},
         }
     )
-    body["hard_stop"] = hard_stop
-    if hard_stop_reason is not None:
-        body["hard_stop_reason"] = hard_stop_reason
-    return {"candidates": [{"content": {"parts": [{"text": json.dumps(body)}]}}]}
+    return {
+    "candidates": [
+        {
+            "content": {
+                "parts": [{"text": json.dumps(body)}]
+            }
+        }
+    ]
+}
 
 
 @pytest.fixture(autouse=True)
@@ -94,13 +99,6 @@ class TestScore:
         assert result["dimensions"]["audience_relevance"]["score"] == 10.0
         assert result["dimensions"]["brand_fit"]["score"] == 0.0
         assert result["dimensions"]["trend_fit"]["score"] == 6.0
-
-    def test_hard_stop_flows_through_to_the_output(self, monkeypatch):
-        payload = model_payload(hard_stop=True, hard_stop_reason="makes a banned claim")
-        monkeypatch.setattr(score_ai.requests, "post", lambda **kw: FakeResponse(200, payload))
-        result = score_ai.score(channel_record(), rules_text="rules")
-        assert result["hard_stop"] is True
-        assert result["hard_stop_reason"] == "makes a banned claim"
 
     def test_malformed_response_fails_cleanly(self, monkeypatch):
         """Unparseable JSON must raise, not silently produce a fake score."""
