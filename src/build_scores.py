@@ -22,7 +22,7 @@ def build(channel_path, use_model=True):
         from . import score_ai
         result = score_ai.score(record, rules_text)
         dimensions.update(result["dimensions"])
-
+    else:
         for dim in ("audience_relevance", "brand_fit", "trend_fit"):
             dimensions[dim] = {
                 "score": None, "reason": "model scoring skipped",
@@ -30,10 +30,10 @@ def build(channel_path, use_model=True):
             }
 
     out = {
-    "handle": record["handle"],
-    "scored_at": datetime.now(timezone.utc).isoformat(),
-    "dimensions": dimensions,
-}
+        "handle": record["handle"],
+        "scored_at": datetime.now(timezone.utc).isoformat(),
+        "dimensions": dimensions,
+    }
     SCORES.mkdir(parents=True, exist_ok=True)
     path = SCORES / channel_path.name
     path.write_text(json.dumps(out, indent=2, ensure_ascii=False))
