@@ -73,8 +73,9 @@ def model_payload(dimensions=None):
 
 @pytest.fixture(autouse=True)
 def no_search(monkeypatch):
-    """Every test here skips the grounding call; that request is a separate concern."""
+    """Most scoring tests isolate the final structured-output model call."""
     monkeypatch.setattr(score_ai, "ground_trend_topics", lambda rules_text: ("", []))
+    monkeypatch.setattr(score_ai, "embed_text", lambda text: (1.0, 0.0))
 
 
 class TestPrompt:
@@ -83,6 +84,51 @@ class TestPrompt:
         assert "CAMPAIGN RULES TEXT" in prompt
         assert "Sunscreen routine" in prompt
         assert "Daily SPF talk, unsponsored." in prompt
+
+    def test_includes_embedding_similarity_as_a_supporting_signal(self):
+        prompt = score_ai.build_prompt(
+            channel_record(),
+            "CAMPAIGN RULES TEXT",
+            audience_similarity_value=0.81234,
+        )
+        assert "AUDIENCE EMBEDDING SIGNAL" in prompt
+        assert "0.8123" in prompt
+        assert "not as a score" in prompt
+
+
+class TestAudienceEmbeddings:
+    def test_cosine_similarity_known_values(self):
+        assert score_ai.cosine_similarity((1.0, 0.0), (1.0, 0.0)) == pytest.approx(1.0)
+        assert score_ai.cosine_similarity((1.0, 0.0), (0.0, 1.0)) == pytest.approx(0.0)
+
+    def test_audience_similarity_embeds_campaign_and_creator_text(self, monkeypatch):
+        seen = []
+
+        def fake_embed(text):
+            seen.append(text)
+            return (1.0, 0.0) if len(seen) == 1 else (0.8, 0.6)
+
+        monkeypatch.setattr(score_ai, "embed_text", fake_embed)
+        similarity = score_ai.audience_similarity(
+            channel_record(description="Creative workflow tutorials"),
+            "## Product\nVisual workspace\n\n## Audience\nDesigners and filmmakers\n\n"
+            "## Message\nOrganize creative projects\n\n## Banned claims\n- something",
+        )
+
+        assert similarity == pytest.approx(0.8)
+        assert "Designers and filmmakers" in seen[0]
+        assert "something" not in seen[0]
+        assert "Creative workflow tutorials" in seen[1]
+
+    def test_score_records_embedding_similarity_as_evidence(self, monkeypatch):
+        monkeypatch.setattr(score_ai, "audience_similarity", lambda record, rules: 0.81234)
+        payload = model_payload()
+        monkeypatch.setattr(score_ai.requests, "post", lambda **kw: FakeResponse(200, payload))
+
+        result = score_ai.score(channel_record(), rules_text="rules")
+
+        evidence = result["dimensions"]["audience_relevance"]["evidence"]
+        assert "embedding cosine similarity: 0.8123" in evidence
 
 
 class TestScore:
