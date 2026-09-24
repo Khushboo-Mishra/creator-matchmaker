@@ -24,6 +24,7 @@ def channel_record(**overrides):
     base = {
         "handle": "@studio",
         "title": "Studio Channel",
+        "description": "Creative workflow tutorials for working filmmakers.",
         "subscribers": 10000,
         "videos": [
             {
@@ -84,6 +85,17 @@ class TestPrompt:
         assert "CAMPAIGN RULES TEXT" in prompt
         assert "Sunscreen routine" in prompt
         assert "Daily SPF talk, unsponsored." in prompt
+        assert "Creative workflow tutorials for working filmmakers." in prompt
+        assert "[v1]" in prompt
+
+    def test_brand_fit_has_distinct_criteria_and_exclusions(self):
+        prompt = score_ai.build_prompt(channel_record(), "CAMPAIGN RULES TEXT")
+        assert "real creative workflow" in prompt
+        assert "tone and brand safety" in prompt
+        assert "sponsorship/disclosure" in prompt
+        assert "Do not use" in prompt
+        assert "viewer comments" in prompt
+        assert "do not claim to have watched a video" in prompt
 
     def test_includes_embedding_similarity_as_a_supporting_signal(self):
         prompt = score_ai.build_prompt(
@@ -204,6 +216,37 @@ class TestRetry:
         r = score_ai._post_with_retry(url="x", headers={}, json={}, timeout=1)
         assert r.status_code == 200
         assert calls["n"] == 2
+
+
+class TestBrandFitVideoReview:
+    def test_uses_public_youtube_url_and_requests_timestamp_evidence(self, monkeypatch):
+        payload = {
+            "candidates": [{
+                "content": {"parts": [{"text": json.dumps({
+                    "score": 8,
+                    "reason": "Natural workflow fit.",
+                    "evidence": ["01:24"],
+                })}]},
+            }],
+        }
+        calls = []
+
+        def fake_post(**kwargs):
+            calls.append(kwargs)
+            return FakeResponse(200, payload)
+
+        monkeypatch.setattr(score_ai.requests, "post", fake_post)
+        result = score_ai.score_brand_fit_from_video(
+            channel_record(),
+            "https://www.youtube.com/watch?v=abc123",
+            rules_text="rules",
+        )
+
+        parts = calls[0]["json"]["contents"][0]["parts"]
+        assert parts[0]["fileData"]["fileUri"] == "https://www.youtube.com/watch?v=abc123"
+        assert "MM:SS timestamps" in parts[1]["text"]
+        assert result["score"] == 8.0
+        assert result["evidence"] == ["01:24"]
 
 
 if __name__ == "__main__":

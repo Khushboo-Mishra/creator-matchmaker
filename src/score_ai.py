@@ -222,7 +222,7 @@ def ground_trend_topics(rules_text):
 
 def build_prompt(channel_record, rules_text, trend_context="", audience_similarity_value=None):
     videos = "\n".join(
-        f"- {v['title']} — {_truncate(v.get('description', ''))}"
+        f"- [{v.get('video_id', '?')}] {v['title']} — {_truncate(v.get('description', ''))}"
         for v in channel_record["videos"][:10]
     )
     comments = "\n".join(f"- {c}" for c in channel_record.get("sampled_comments", [])[:60])
@@ -245,6 +245,7 @@ CAMPAIGN RULES
 
 CHANNEL: {channel_record['title']} ({channel_record['handle']})
 Subscribers: {channel_record['subscribers']}
+Channel description: {_truncate(channel_record.get('description', ''), limit=600)}
 
 RECENT VIDEOS (title — description, truncated)
 {videos}
@@ -262,8 +263,13 @@ Score three dimensions 0 to 10:
   audience_relevance  Does this audience care about this product category?
                       Judge from the comments, not the subscriber count.
   brand_fit           Can this brand sit beside this content without risk?
-                      Apply the banned claims and the tone in the rules above,
-                      and read the video descriptions as well as the titles.
+                      Judge whether Milanote can be demonstrated naturally in
+                      the creator's existing format. Consider evidence of a
+                      real creative workflow, tone and brand safety, and
+                      whether sponsorship/disclosure can fit clearly. Apply
+                      allowed and banned claims from the rules. Do not use
+                      subscriber count, trend popularity, or viewer comments
+                      to raise or lower brand_fit.
   trend_fit           Do the channel's recent subjects overlap with what is
                       currently rising in this category? Use the rising
                       topics above if present.
@@ -271,8 +277,10 @@ Score three dimensions 0 to 10:
 {CALIBRATION}
 
 Give every score a single sentence of reasoning that cites something concrete
-from the material above, and list any video IDs, quotes, or URLs it rests on
-as evidence. Never invent a fact you were not given.
+from the material above. For brand_fit, cite the supplied video IDs that show
+the creator's format or tone; do not claim to have watched a video in this
+metadata-only scoring pass. List the video IDs, quotes, or URLs each score
+rests on as evidence. Never invent a fact you were not given.
 """
 
 
@@ -335,17 +343,21 @@ def score_brand_fit_from_video(channel_record, video_url, rules_text=None):
     """
     rules_text = rules_text if rules_text is not None else RULES_FILE.read_text()
     prompt = f"""You are reassessing brand_fit for one YouTube channel by watching a
-video directly, not just reading its title and description.
+public YouTube video directly, not just reading its title and description.
 
 CAMPAIGN RULES
 {rules_text}
 
 CHANNEL: {channel_record['title']} ({channel_record['handle']})
 
-Watch the attached video and score brand_fit 0 to 10: can this brand sit
-beside this content without risk? Apply the banned claims and the tone in the
-rules above. Give one sentence of reasoning that cites something you saw or
-heard, and list any relevant MM:SS timestamps as evidence.
+Watch the attached video and score brand_fit 0 to 10. Assess whether Milanote
+can be demonstrated naturally in this creator's format, whether the video
+shows a genuine creative workflow, whether its tone is brand-safe, and whether
+a sponsorship disclosure could be clear without disrupting the content.
+Apply the allowed and banned claims in the rules. Give one sentence of
+reasoning that cites something you saw or heard, and list the most relevant
+MM:SS timestamps as evidence. Do not score audience relevance, reach, or trend
+fit in this pass.
 """
     body = {
         "contents": [{
