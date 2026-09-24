@@ -12,9 +12,11 @@ Three things that matter more than prompt wording:
      each with the reasoning. This beats any amount of rewording.
 """
 import json
+import hashlib
 import math
 import re
 import time
+from datetime import datetime, timezone
 from functools import lru_cache
 
 import requests
@@ -25,6 +27,7 @@ from .config import (
     GEMINI_MODEL,
     MODEL_DIMENSIONS,
     RULES_FILE,
+    TREND_CACHE_FILE,
 )
 
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -33,6 +36,10 @@ EMBEDDING_ENDPOINT = (
 )
 
 RETRY_DELAYS = (2, 4, 8)
+
+
+class TrendGroundingError(RuntimeError):
+    """Current trend evidence is unavailable and no valid snapshot exists."""
 
 
 def _post_with_retry(**kwargs):
@@ -177,47 +184,120 @@ def audience_similarity(channel_record, rules_text):
 
 
 def _trend_search_prompt(rules_text):
-    return f"""Search for what is currently rising on YouTube in the product
-category described by these campaign rules. List the topics, ingredients, or
-claims that are gaining traction right now, one per line.
+    return f"""Search for topics and formats currently rising on YouTube among
+the creative professionals and workflows described by these campaign rules.
+Return a concise, source-backed list of specific trends relevant to this
+campaign. Avoid generic evergreen topics and do not include a topic merely
+because it mentions the brand.
 
 CAMPAIGN RULES
 {rules_text}
 """
 
 
+def _rules_hash(rules_text):
+    return hashlib.sha256(rules_text.encode("utf-8")).hexdigest()
+
+
+def _read_trend_snapshot(rules_text):
+    """Return a compatible persisted snapshot, or None."""
+    if not TREND_CACHE_FILE.exists():
+        return None
+    try:
+        snapshot = json.loads(TREND_CACHE_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if snapshot.get("rules_sha256") != _rules_hash(rules_text):
+        return None
+    if snapshot.get("model") != GEMINI_MODEL:
+        return None
+    context = snapshot.get("context")
+    citations = snapshot.get("citations")
+    if not isinstance(context, str) or not context.strip():
+        return None
+    if not isinstance(citations, list):
+        return None
+    return context, [str(citation) for citation in citations]
+
+
+def _write_trend_snapshot(rules_text, context, citations):
+    snapshot = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "model": GEMINI_MODEL,
+        "rules_sha256": _rules_hash(rules_text),
+        "context": context,
+        "citations": citations,
+    }
+    TREND_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temporary = TREND_CACHE_FILE.with_suffix(TREND_CACHE_FILE.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(snapshot, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    temporary.replace(TREND_CACHE_FILE)
+
+
+def _fetch_grounded_trends(rules_text):
+    """Fetch one current, Search-grounded trend snapshot."""
+    body = {
+        "contents": [{"parts": [{"text": _trend_search_prompt(rules_text)}]}],
+        "tools": [{"google_search": {}}],
+    }
+    r = _post_with_retry(
+        url=ENDPOINT.format(model=GEMINI_MODEL),
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json=body,
+        timeout=60,
+    )
+    r.raise_for_status()
+    candidate = r.json()["candidates"][0]
+    context = candidate["content"]["parts"][0]["text"].strip()
+    meta = candidate.get("groundingMetadata", {})
+    citations = [
+        chunk["web"]["uri"]
+        for chunk in meta.get("groundingChunks", [])
+        if "web" in chunk and chunk["web"].get("uri")
+    ]
+    if not context:
+        raise TrendGroundingError("Google Search grounding returned no trend context")
+    return context, list(dict.fromkeys(citations))
+
+
 @lru_cache(maxsize=None)
 def ground_trend_topics(rules_text):
-    """Grounded call for rising topics and their citations.
+    """Return one persisted trend snapshot for this rules/model combination.
 
-    Cached per rules_text: trends don't change between channels scored in the
-    same run, so this makes one search call per run, not one per channel, and
-    stability.py's repeated score() calls reuse it instead of re-grounding.
+    The disk snapshot keeps comparisons stable across channels, processes, and
+    teammates. In-memory caching avoids repeated disk reads in one process.
     A separate call from the JSON-forced scoring call below: combining the
     google_search tool with a responseSchema is preview-only and limited to
     the Gemini 3 model family, and GEMINI_MODEL is pinned to gemini-2.5-flash,
     so search and forced JSON stay in two requests instead of being combined
     into one.
     """
-    body = {
-        "contents": [{"parts": [{"text": _trend_search_prompt(rules_text)}]}],
-        "tools": [{"google_search": {}}],
-    }
+    cached = _read_trend_snapshot(rules_text)
+    if cached is not None:
+        return cached
     try:
-        r = _post_with_retry(
-            url=ENDPOINT.format(model=GEMINI_MODEL),
-            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-            json=body,
-            timeout=60,
-        )
-        r.raise_for_status()
-        candidate = r.json()["candidates"][0]
-        text = candidate["content"]["parts"][0]["text"]
-        meta = candidate.get("groundingMetadata", {})
-        citations = [c["web"]["uri"] for c in meta.get("groundingChunks", []) if "web" in c]
-        return text, citations
-    except (requests.RequestException, KeyError, IndexError):
-        return "", []
+        context, citations = _fetch_grounded_trends(rules_text)
+        _write_trend_snapshot(rules_text, context, citations)
+        return context, citations
+    except (requests.RequestException, KeyError, IndexError, OSError, ValueError) as exc:
+        raise TrendGroundingError(
+            "Unable to ground current trends and no valid data/trend_snapshot.json exists"
+        ) from exc
+
+
+def refresh_trend_topics(rules_text=None):
+    """Explicitly replace the persisted trend snapshot and clear memory cache."""
+    rules_text = rules_text if rules_text is not None else RULES_FILE.read_text()
+    try:
+        context, citations = _fetch_grounded_trends(rules_text)
+        _write_trend_snapshot(rules_text, context, citations)
+    except (requests.RequestException, KeyError, IndexError, OSError, ValueError) as exc:
+        raise TrendGroundingError("Unable to refresh the grounded trend snapshot") from exc
+    ground_trend_topics.cache_clear()
+    return context, citations
 
 
 def build_prompt(channel_record, rules_text, trend_context="", audience_similarity_value=None):

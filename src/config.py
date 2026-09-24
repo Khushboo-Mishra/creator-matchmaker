@@ -13,6 +13,7 @@ HANDLES_FILE = DATA / "handles.txt"
 # Written once by src/discover.py, committed, and read here. Not gitignored:
 # it is an input, not pulled data.
 DISCOVERED_FILE = DATA / "discovered_candidates.json"
+TREND_CACHE_FILE = DATA / "trend_snapshot.json"
 RULES_FILE = ROOT / "config" / "rules.md"
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
