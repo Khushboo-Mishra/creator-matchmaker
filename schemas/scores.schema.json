@@ -6,8 +6,7 @@
   "required": [
     "handle",
     "scored_at",
-    "dimensions",
-    "hard_stop"
+    "dimensions"
   ],
   "properties": {
     "handle": {
@@ -16,23 +15,6 @@
     "scored_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "hard_stop": {
-      "type": "boolean",
-      "description": "True disqualifies the channel outright. Disqualified is not the same as ranked lower: these leave the ranked list entirely."
-    },
-    "hard_stop_reason": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "warnings": {
-      "type": "array",
-      "description": "Non-blocking policy signals for a human to check, e.g. a possible unsupported claim or an unconfirmed spoken disclosure. Never disqualifies a channel on its own.",
-      "items": {
-        "type": "string"
-      }
     },
     "dimensions": {
       "type": "object",

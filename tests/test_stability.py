@@ -43,8 +43,7 @@ def scoring_payload(score=5):
     body = {
         "audience_relevance": {"score": score, "reason": "r", "evidence": []},
         "brand_fit": {"score": score, "reason": "r", "evidence": []},
-        "trend_fit": {"score": score, "reason": "r", "evidence": []},
-        "hard_stop": False,
+        "trend_fit": {"score": score, "reason": "r", "evidence": []}
     }
     return {"candidates": [{"content": {"parts": [{"text": json.dumps(body)}]}}]}
 

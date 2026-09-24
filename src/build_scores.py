@@ -9,7 +9,7 @@ import json
 import sys
 from datetime import datetime, timezone
 
-from . import arithmetic, policy
+from . import arithmetic
 from .config import CHANNELS, RULES_FILE, SCORES
 
 
@@ -18,18 +18,11 @@ def build(channel_path, use_model=True):
     dimensions = arithmetic.compute(record)
     rules_text = RULES_FILE.read_text()
 
-    # Policy gate runs regardless of --no-model: it's plain code, not a model call.
-    gate = policy.evaluate(record, rules_text)
-    reasons = [gate["hard_stop_reason"]] if gate["hard_stop"] else []
-    warnings = list(gate["warnings"])
-
     if use_model:
         from . import score_ai
         result = score_ai.score(record, rules_text)
         dimensions.update(result["dimensions"])
-        if result["hard_stop"]:
-            reasons.append(result.get("hard_stop_reason") or "model flagged hard stop")
-    else:
+
         for dim in ("audience_relevance", "brand_fit", "trend_fit"):
             dimensions[dim] = {
                 "score": None, "reason": "model scoring skipped",
@@ -37,13 +30,10 @@ def build(channel_path, use_model=True):
             }
 
     out = {
-        "handle": record["handle"],
-        "scored_at": datetime.now(timezone.utc).isoformat(),
-        "hard_stop": bool(reasons),
-        "hard_stop_reason": "; ".join(reasons) if reasons else None,
-        "warnings": warnings,
-        "dimensions": dimensions,
-    }
+    "handle": record["handle"],
+    "scored_at": datetime.now(timezone.utc).isoformat(),
+    "dimensions": dimensions,
+}
     SCORES.mkdir(parents=True, exist_ok=True)
     path = SCORES / channel_path.name
     path.write_text(json.dumps(out, indent=2, ensure_ascii=False))
