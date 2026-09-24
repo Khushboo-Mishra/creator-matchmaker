@@ -57,8 +57,9 @@ GROUNDING_PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
-def clear_trend_cache():
-    """The cache is shared across tests, so start and end each test empty."""
+def clear_trend_cache(monkeypatch, tmp_path):
+    """Isolate both in-memory and persisted trend caches for every test."""
+    monkeypatch.setattr(score_ai, "TREND_CACHE_FILE", tmp_path / "trend_snapshot.json")
     score_ai.ground_trend_topics.cache_clear()
     yield
     score_ai.ground_trend_topics.cache_clear()
@@ -94,6 +95,43 @@ class TestGroundingIsCachedAcrossRuns:
 
         for values in per_dim.values():
             assert stability._spread(values) == 0.0
+
+    def test_persisted_snapshot_survives_memory_cache_clear(self, monkeypatch):
+        counts = {"grounding": 0}
+
+        def fake_post(**kwargs):
+            counts["grounding"] += 1
+            return FakeResponse(200, GROUNDING_PAYLOAD)
+
+        monkeypatch.setattr(score_ai.requests, "post", fake_post)
+        first = score_ai.ground_trend_topics("rules")
+        score_ai.ground_trend_topics.cache_clear()
+        second = score_ai.ground_trend_topics("rules")
+
+        assert first == second
+        assert counts["grounding"] == 1
+
+    def test_changed_rules_create_a_new_snapshot(self, monkeypatch):
+        counts = {"grounding": 0}
+
+        def fake_post(**kwargs):
+            counts["grounding"] += 1
+            return FakeResponse(200, GROUNDING_PAYLOAD)
+
+        monkeypatch.setattr(score_ai.requests, "post", fake_post)
+        score_ai.ground_trend_topics("rules one")
+        score_ai.ground_trend_topics("rules two")
+
+        assert counts["grounding"] == 2
+
+    def test_grounding_failure_without_snapshot_is_explicit(self, monkeypatch):
+        def fail(**kwargs):
+            raise score_ai.requests.RequestException("offline")
+
+        monkeypatch.setattr(score_ai.requests, "post", fail)
+
+        with pytest.raises(score_ai.TrendGroundingError, match="no valid"):
+            score_ai.ground_trend_topics("rules")
 
 
 if __name__ == "__main__":
