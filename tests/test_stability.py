@@ -67,6 +67,7 @@ def clear_trend_cache():
 class TestGroundingIsCachedAcrossRuns:
     def test_stability_grounds_once_and_scores_runs_times(self, monkeypatch):
         counts = {"grounding": 0, "scoring": 0}
+        monkeypatch.setattr(score_ai, "audience_similarity", lambda record, rules: None)
 
         def fake_post(**kwargs):
             if "tools" in kwargs["json"]:
@@ -82,6 +83,7 @@ class TestGroundingIsCachedAcrossRuns:
         assert counts["scoring"] == stability.RUNS
 
     def test_spread_is_zero_when_the_model_returns_the_same_score_each_time(self, monkeypatch):
+        monkeypatch.setattr(score_ai, "audience_similarity", lambda record, rules: None)
         def fake_post(**kwargs):
             if "tools" in kwargs["json"]:
                 return FakeResponse(200, GROUNDING_PAYLOAD)
