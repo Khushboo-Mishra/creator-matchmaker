@@ -58,11 +58,11 @@ GROUNDING_PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
-def clear_trend_cache():
-    """The cache is shared across tests, so start and end each test empty."""
-    score_ai.ground_trend_topics.cache_clear()
-    yield
-    score_ai.ground_trend_topics.cache_clear()
+def isolated_trend_cache(tmp_path, monkeypatch):
+    """The cache now lives on disk so it survives across processes; give each
+    test its own throwaway file instead of sharing the real one.
+    """
+    monkeypatch.setattr(score_ai, "TREND_CACHE_FILE", tmp_path / "trend_cache.json")
 
 
 class TestGroundingIsCachedAcrossRuns:
@@ -93,6 +93,28 @@ class TestGroundingIsCachedAcrossRuns:
 
         for values in per_dim.values():
             assert stability._spread(values) == 0.0
+
+    def test_grounding_is_logged_once_then_silent_on_cache_hits(self, monkeypatch, capsys):
+        """grep -c "grounding trends" is how the live check counts real search calls."""
+        monkeypatch.setattr(score_ai.requests, "post", lambda **kw: FakeResponse(
+            200, GROUNDING_PAYLOAD if "tools" in kw["json"] else scoring_payload()
+        ))
+
+        stability.score_channel(channel_record(), rules_text="rules")
+
+        assert capsys.readouterr().out.count("grounding trends") == 1
+
+    def test_cache_survives_a_fresh_process_reusing_the_same_file(self, monkeypatch, capsys):
+        """A later, separate process pointed at the same cache file must not re-ground."""
+        monkeypatch.setattr(score_ai.requests, "post", lambda **kw: FakeResponse(
+            200, GROUNDING_PAYLOAD if "tools" in kw["json"] else scoring_payload()
+        ))
+
+        score_ai.ground_trend_topics("rules")
+        capsys.readouterr()  # discard the first run's output
+
+        score_ai.ground_trend_topics("rules")
+        assert "grounding trends" not in capsys.readouterr().out
 
 
 if __name__ == "__main__":

@@ -11,13 +11,13 @@ Three things that matter more than prompt wording:
   3. Calibrate with three hand-scored examples in the prompt, a 9, a 5 and a 2,
      each with the reasoning. This beats any amount of rewording.
 """
+import hashlib
 import json
 import time
-from functools import lru_cache
 
 import requests
 
-from .config import GEMINI_API_KEY, GEMINI_MODEL, MODEL_DIMENSIONS, RULES_FILE
+from .config import GEMINI_API_KEY, GEMINI_MODEL, MODEL_DIMENSIONS, RULES_FILE, TREND_CACHE_FILE
 
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
@@ -104,19 +104,40 @@ CAMPAIGN RULES
 """
 
 
-@lru_cache(maxsize=None)
+def _trend_cache_key(rules_text):
+    return hashlib.sha256(rules_text.encode()).hexdigest()
+
+
+def _load_trend_cache():
+    try:
+        return json.loads(TREND_CACHE_FILE.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _save_trend_cache(cache):
+    TREND_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    TREND_CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
+
 def ground_trend_topics(rules_text):
     """Grounded call for rising topics and their citations.
 
-    Cached per rules_text: trends don't change between channels scored in the
-    same run, so this makes one search call per run, not one per channel, and
-    stability.py's repeated score() calls reuse it instead of re-grounding.
-    A separate call from the JSON-forced scoring call below: combining the
-    google_search tool with a responseSchema is preview-only and limited to
-    the Gemini 3 model family, and GEMINI_MODEL is pinned to gemini-2.5-flash,
-    so search and forced JSON stay in two requests instead of being combined
-    into one.
+    Cached on disk, keyed by a hash of rules_text: trends don't change between
+    channels scored in the same run, or between that run and a later
+    stability.py run, so this makes one search call per rules.md content, not
+    one per channel or per process. A separate call from the JSON-forced
+    scoring call below: combining the google_search tool with a responseSchema
+    is preview-only and limited to the Gemini 3 model family, and GEMINI_MODEL
+    is pinned to gemini-2.5-flash, so search and forced JSON stay in two
+    requests instead of being combined into one.
     """
+    cache = _load_trend_cache()
+    key = _trend_cache_key(rules_text)
+    if key in cache:
+        return cache[key]["text"], cache[key]["citations"]
+
+    print("grounding trends via Google Search (cache miss)")
     body = {
         "contents": [{"parts": [{"text": _trend_search_prompt(rules_text)}]}],
         "tools": [{"google_search": {}}],
@@ -133,9 +154,12 @@ def ground_trend_topics(rules_text):
         text = candidate["content"]["parts"][0]["text"]
         meta = candidate.get("groundingMetadata", {})
         citations = [c["web"]["uri"] for c in meta.get("groundingChunks", []) if "web" in c]
-        return text, citations
     except (requests.RequestException, KeyError, IndexError):
-        return "", []
+        text, citations = "", []
+
+    cache[key] = {"text": text, "citations": citations}
+    _save_trend_cache(cache)
+    return text, citations
 
 
 def build_prompt(channel_record, rules_text, trend_context=""):
