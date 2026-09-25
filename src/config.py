@@ -14,6 +14,9 @@ HANDLES_FILE = DATA / "handles.txt"
 # it is an input, not pulled data.
 DISCOVERED_FILE = DATA / "discovered_candidates.json"
 RULES_FILE = ROOT / "config" / "rules.md"
+# Grounded trend topics keyed by a hash of rules.md, so a build_scores run and a
+# later stability.py run share one search call instead of re-grounding each time.
+TREND_CACHE_FILE = DATA / "trend_cache.json"
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
