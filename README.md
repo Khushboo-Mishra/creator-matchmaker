@@ -63,9 +63,17 @@ generate an API key. Free.
 ```bash
 python -m src.pull                      # pull every handle in data/handles.txt
 python -m src.pull @somebody            # or just one
+python -m src.refresh_trends             # explicitly refresh one campaign trend snapshot
 python -m src.build_scores --no-model   # arithmetic only, no Gemini key needed
 python -m src.build_scores              # all six dimensions
 ```
+
+`src.refresh_trends` uses Gemini with Google Search once and writes
+`data/trend_snapshot.json`. The snapshot records the rules hash, model,
+timestamp, trend context and citations. Every creator is scored against that
+same snapshot until it is explicitly refreshed; changing `rules.md` or the
+configured Gemini model invalidates it automatically. Commit the snapshot when
+teammates or a demo must reproduce the exact same Trend Fit evidence.
 
 ## Working agreements
 

@@ -56,10 +56,10 @@ class TestEngagement:
         assert score > 0
         assert "14 uploads" in reason
 
-    def test_no_videos_scores_zero_with_a_reason(self):
+    def test_no_videos_is_not_measurable_rather_than_zero(self):
         score, reason = engagement([])
-        assert score == 0.0
-        assert reason
+        assert score is None
+        assert "not measurable" in reason
 
 
 class TestMomentum:
@@ -78,9 +78,10 @@ class TestMomentum:
         ]
         assert momentum(one_hit)[0] == momentum(dead)[0]
 
-    def test_short_channel_is_reported_as_not_measurable(self):
+    def test_short_channel_is_not_measurable_not_zero(self):
+        """Zero means measured and fading. Nine uploads means we cannot tell."""
         score, reason = momentum(channel(9))
-        assert score == 0.0
+        assert score is None
         assert "not measurable" in reason
 
     def test_zero_prior_views_does_not_divide_by_zero(self):
@@ -88,8 +89,8 @@ class TestMomentum:
             video(views=0, days_ago=10 + i) for i in range(10)
         ]
         score, reason = momentum(videos)
-        assert score == 0.0
-        assert reason
+        assert score is None
+        assert "not measurable" in reason
 
 
 class TestSpeedToActivate:
@@ -124,11 +125,17 @@ class TestComputeContract:
             assert dim["reason"], name
             assert dim["source"] == "arithmetic", name
 
-    def test_a_channel_with_no_videos_still_produces_a_valid_record(self):
+    def test_a_channel_with_no_videos_is_null_everywhere_not_zero(self):
+        """A failed pull must not look like a terrible channel."""
         out = arithmetic.compute({"videos": []})
-        for dim in out.values():
-            assert dim["score"] == 0.0
-            assert dim["reason"]
+        for name, dim in out.items():
+            assert dim["score"] is None, name
+            assert "not measurable" in dim["reason"], name
+
+    def test_a_measurable_channel_still_produces_numbers(self):
+        out = arithmetic.compute({"videos": channel(20)})
+        for name, dim in out.items():
+            assert isinstance(dim["score"], float), name
 
 
 def arithmetic_dimensions():

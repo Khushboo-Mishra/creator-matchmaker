@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Creator Matchmaker</title>
+<meta name="description" content="Working prototype from the NYU SPS x Google Marketing Accelerator Hackathon: 70 YouTube creators scored once across six dimensions, recast live under campaign weights.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#12182B; --paper:#FAF8F4; --card:#FFFFFF; --line:#E2DED4;
+  --text:#12182B; --muted:#5A6478; --faint:#8A8272;
+  --amber:#B86A14; --amber-bright:#D98324; --blue:#2E6BB8; --blue-soft:#E8F0FA;
+  --bar:#EAE5DA; --good:#2F7A54; --good-soft:#E4F1EA; --plan-soft:#F0EDE5;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ink:#0A0F1C; --paper:#0E1424; --card:#161E33; --line:#28324E;
+  --text:#F2F4F8; --muted:#A3AEC4; --faint:#7A869E;
+  --amber:#E8A960; --amber-bright:#E8A960; --blue:#7FB0EE; --blue-soft:#1B2740;
+  --bar:#243052; --good:#6FCB9B; --good-soft:#15301F; --plan-soft:#1D2540;
+  color-scheme:dark; }}
+:root[data-theme="dark"]{
+  --ink:#0A0F1C; --paper:#0E1424; --card:#161E33; --line:#28324E;
+  --text:#F2F4F8; --muted:#A3AEC4; --faint:#7A869E;
+  --amber:#E8A960; --amber-bright:#E8A960; --blue:#7FB0EE; --blue-soft:#1B2740;
+  --bar:#243052; --good:#6FCB9B; --good-soft:#15301F; --plan-soft:#1D2540;
+  color-scheme:dark; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.disp{font-family:'Space Grotesk','IBM Plex Sans',sans-serif;text-wrap:balance}
+a{color:var(--blue)}
+.wrap{max-width:1480px;margin:0 auto;padding-left:20px;padding-right:20px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:22px;padding-block:13px;flex-wrap:wrap}
+nav .brand{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;margin-right:auto}
+nav a{font-size:13.5px;color:var(--muted);text-decoration:none}
+nav a:hover{color:var(--amber)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:1.7px;text-transform:uppercase;color:var(--amber);margin:0 0 12px}
+section{padding-block:56px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2.sec{font-size:26px;font-weight:600;margin:0 0 8px;letter-spacing:-.3px}
+p.lede{color:var(--muted);margin:0 0 28px;max-width:70ch;font-size:16px}
+.hero h1{font-size:clamp(32px,5vw,52px);font-weight:600;margin:0 0 14px;letter-spacing:-1px;line-height:1.08}
+.hero p{font-size:clamp(16px,2vw,19px);color:var(--muted);max-width:66ch;margin:0}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:30px}
+.fact{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.fact b{display:block;font-family:'Space Grotesk',sans-serif;font-size:27px;font-weight:600;color:var(--amber)}
+.fact span{font-size:12.5px;color:var(--muted)}
+.badge{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;
+  padding:3px 9px;border-radius:99px;vertical-align:2px}
+.badge.live{background:var(--good-soft);color:var(--good)}
+.badge.plan{background:var(--plan-soft);color:var(--muted)}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.role{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;
+  border-top:3px solid var(--rc,var(--amber));display:flex;flex-direction:column;gap:5px;min-height:112px}
+.role .rname{font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+.role .rcast{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;overflow-wrap:anywhere}
+.role .rwhy{font-size:12.5px;color:var(--muted)}
+.role .empty{color:var(--faint);font-style:italic;font-weight:400;font-size:14px}
+.cols{display:grid;grid-template-columns:292px 1fr;gap:22px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px}
+.slider{margin-bottom:15px}
+.slabel{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:4px}
+.slabel span{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+input[type=range]{width:100%;accent-color:var(--amber-bright);margin:0}
+.presets{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font:inherit;font-size:12.5px;padding:6px 11px;border-radius:99px;border:1px solid var(--line);
+  background:transparent;color:var(--text);cursor:pointer}
+.chip:hover{border-color:var(--amber)}
+.chip[aria-pressed="true"]{background:var(--amber-bright);border-color:var(--amber-bright);color:#1A1204;font-weight:600}
+.meter{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);margin-top:13px;padding-top:11px}
+.meter b{color:var(--good);font-variant-numeric:tabular-nums}
+.rowhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:12px;flex-wrap:wrap}
+.rowhead h3{font-size:16px;margin:0;font-weight:600}
+.count{font-size:13px;color:var(--muted)}
+ol.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+  display:grid;grid-template-columns:34px 1fr 150px 88px;gap:13px;align-items:center}
+.item.cast{border-left:3px solid var(--amber-bright)}
+.rank{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.handle{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.meta{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:99px;background:var(--blue-soft);
+  color:var(--blue);font-weight:600;margin-left:6px;vertical-align:1px}
+.bars{display:flex;gap:3px;align-items:flex-end;height:30px}
+.bar{width:14px;background:var(--bar);border-radius:2px 2px 0 0;position:relative}
+.bar i{position:absolute;left:0;right:0;bottom:0;background:var(--amber-bright);border-radius:2px 2px 0 0;display:block}
+.bar.null{background:transparent;border-bottom:2px dotted var(--faint)}
+.score{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.score small{display:block;font-size:10.5px;font-weight:400;color:var(--faint);letter-spacing:.4px}
+.act{font:inherit;font-size:12.5px;padding:5px 10px;border-radius:7px;border:1px solid var(--line);
+  background:transparent;color:var(--text);cursor:pointer}
+.act:hover{border-color:var(--amber)}
+.why{grid-column:1/-1;border-top:1px solid var(--line);margin-top:4px;padding-top:9px;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:5px 20px}
+.why div{font-size:12.5px;color:var(--muted)}
+.why b{color:var(--text);font-weight:600}
+.note{font-size:12.5px;color:var(--faint);margin-top:16px}
+.right{text-align:right}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.step .n{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--amber);letter-spacing:1.2px}
+.step h4{margin:0;font-size:16px;font-weight:600}
+.step p{margin:0;font-size:13.5px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;font-size:12px;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--line)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+.tblwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+.callout{background:var(--ink);color:#F2F4F8;border-radius:14px;padding:30px;margin-top:22px;
+  display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.callout h3{margin:0 0 8px;font-size:19px;font-weight:600;color:#F2F4F8}
+.callout p{margin:0;font-size:14.5px;color:#A8B2C8}
+.callout .hi{color:var(--amber-bright);font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:9px}
+.card.built{border-left:3px solid var(--good)}
+.card.planned{border-left:3px solid var(--faint)}
+.card h4{margin:0;font-size:16.5px;font-weight:600;display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.card p{margin:0;font-size:13.5px;color:var(--muted)}
+.card .when{font-size:12px;color:var(--faint);margin-top:auto;padding-top:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+footer{padding-block:34px;font-size:13px;color:var(--faint)}
+footer a{color:var(--muted)}
+:focus-visible{outline:2px solid var(--amber-bright);outline-offset:2px}
+@media (max-width:1000px){
+  .facts,.roles,.flow{grid-template-columns:repeat(2,1fr)}
+  .cards,.two,.callout{grid-template-columns:1fr}
+  .cols{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  .facts,.roles,.flow{grid-template-columns:1fr}
+  .item{grid-template-columns:28px 1fr 78px;row-gap:8px}
+  .bars{display:none}
+  .why{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.item,.bar i{transition:all .18s ease}}
+
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <span class="brand">Creator Matchmaker</span>
+  <a href="#prototype">Prototype</a>
+  <a href="#how">How it works</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="#limits">Limits &amp; data</a>
+  <a href="https://github.com/Khushboo-Mishra/creator-matchmaker">Source</a>
+</div></nav>
+
+<section class="hero"><div class="wrap">
+  <p class="eyebrow">NYU SPS &times; Google Marketing Accelerator &middot; Track 2, Product &amp; Engineering</p>
+  <h1>Casting a roster, not ranking a list</h1>
+  <p>A shortlist ranks creators against each other. A roster gives them different jobs, and swapping one creator moves the others. Every candidate here was scored once across six dimensions and written to disk, so changing what the campaign values is arithmetic over stored numbers rather than a new round of API calls.</p>
+  <div class="facts">
+    <div class="fact"><b>70</b><span>candidate channels pulled from the YouTube Data API</span></div>
+    <div class="fact"><b>1m53s</b><span>to cache all 70, using 350 of a 10,000 unit daily quota</span></div>
+    <div class="fact"><b>6</b><span>scored dimensions, three of them plain arithmetic</span></div>
+    <div class="fact"><b>58</b><span>automated tests over the scoring engine</span></div>
+  </div>
+</div></section>
+
+<section id="prototype"><div class="wrap">
+  <p class="eyebrow">Working now</p>
+  <h2 class="sec">Move a weight, recast the roster <span class="badge live">Live</span></h2>
+  <p class="lede">Real scores from a real run. Drag any slider or pick a campaign preset: the ranking reorders and the four roles are reassigned as a set, so no creator holds two jobs. Remove a cast creator and watch the roles move.</p>
+
+  <div class="roles" id="roles"></div>
+
+  <div class="cols">
+    <div class="panel">
+      <p class="eyebrow" style="margin-bottom:9px">Campaign presets</p>
+      <div class="presets" id="presets"></div>
+      <div id="sliders" style="margin-top:16px"></div>
+      <div class="meter" id="meter"></div>
+    </div>
+    <div>
+      <div class="rowhead"><h3>Ranked candidates</h3><span class="count" id="count"></span></div>
+      <ol class="list" id="list"></ol>
+      <p class="note">Bars show the six dimensions in the order listed at left. A dotted bar means the dimension could not be measured for that channel, so it is left out of the weighted average instead of counted as zero. Channels tagged <span class="tag">partial</span> have arithmetic scores only.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <p class="eyebrow">Architecture</p>
+  <h2 class="sec">Campaign brief in, defensible roster out</h2>
+  <p class="lede">The expensive steps run once per campaign. The step a strategist actually works in costs nothing.</p>
+  <div class="flow">
+    <div class="step"><span class="n">01 DISCOVER</span><h4>Brief becomes queries</h4><p>Gemini turns the campaign rules into YouTube search queries and returns candidates, each carrying the query and video that surfaced it.</p></div>
+    <div class="step"><span class="n">02 PULL</span><h4>Cache the evidence</h4><p>50 uploads, statistics and sampled comments per channel, resolved by handle at one quota unit and cached to disk. Never re-pulled during a demo.</p></div>
+    <div class="step"><span class="n">03 SCORE ONCE</span><h4>Six dimensions, persisted</h4><p>Three arithmetic, three from Gemini. Every score stored with a one-sentence reason and validated against a JSON schema.</p></div>
+    <div class="step"><span class="n">04 CAST</span><h4>Weight, then assign roles</h4><p>Sliders reorder instantly from stored scores. Chosen creators take distinct roles that redistribute when one is swapped out.</p></div>
+  </div>
+
+  <div class="callout">
+    <div><h3>The decision everything follows from</h3><p>Score every channel once and persist the numbers. A weight change is arithmetic over stored values, so <span class="hi">no API call runs when a weight moves</span>. Fifty weightings in a client meeting cost nothing, and the ranking that comes out can be reproduced exactly tomorrow.</p></div>
+    <div><h3>Why half the dimensions are formulas</h3><p>Engagement, momentum and speed to activate are arithmetic anyone can recheck in a spreadsheet. When a client asks where a number came from, <span class="hi">half the answers need no trust in a model at all</span>. Medians rather than means, so one viral video cannot rescue a dead channel.</p></div>
+  </div>
+
+  <h3 style="font-size:17px;margin:30px 0 12px">The six dimensions</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:22%">Dimension</th><th style="width:14%">Source</th><th>Method</th></tr></thead>
+    <tbody>
+      <tr><td>Audience relevance</td><td>Gemini</td><td>Reads sampled comments, not subscriber counts</td></tr>
+      <tr><td>Engagement</td><td>Arithmetic</td><td>(likes + comments) / views across the last 15 uploads</td></tr>
+      <tr><td>Brand fit</td><td>Gemini</td><td>Reads recent titles against the campaign rules file</td></tr>
+      <tr><td>Momentum</td><td>Arithmetic</td><td>Median views of the last 5 uploads over the median of the previous 10</td></tr>
+      <tr><td>Speed to activate</td><td>Arithmetic</td><td>Uploads published in the last 90 days</td></tr>
+      <tr><td>Trend fit</td><td>Gemini</td><td>Recent subjects against a dated, cited trend snapshot</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <p class="eyebrow">What a month buys</p>
+  <h2 class="sec">Roadmap</h2>
+  <p class="lede">Selected teams are announced on 5 October and present on 11 November. The scoring engine is finished, so the five weeks between buy the interaction layer and the accuracy upgrades. Everything below is marked for what it actually is.</p>
+
+  <h3 style="font-size:16px;margin:0 0 12px">Built and running</h3>
+  <div class="cards" style="margin-bottom:26px">
+    <div class="card built"><h4>Quota-aware data engine <span class="badge live">Live</span></h4><p>Resolves channels by handle at one unit each and never searches. Caches 50 uploads, statistics and comments per channel, with schema validation and a resumable, rate-limit-aware scoring run.</p><span class="when">70 channels cached in 1m53s</span></div>
+    <div class="card built"><h4>Six-dimension scoring <span class="badge live">Live</span></h4><p>Three arithmetic dimensions and three from Gemini with forced JSON output. Every score persists with a one-sentence reason. Unmeasurable dimensions return null rather than a misleading zero.</p><span class="when">58 tests, including guards on the scoring rules</span></div>
+    <div class="card built"><h4>Weights and role casting <span class="badge live">Live</span></h4><p>The prototype above. Sliders reorder from stored scores in single-digit milliseconds, and four roles are solved as a set so swapping one creator reassigns the others.</p><span class="when">Shipped ahead of plan</span></div>
+  </div>
+
+  <h3 style="font-size:16px;margin:0 0 12px">5 October to 11 November</h3>
+  <div class="cards" style="margin-bottom:26px">
+    <div class="card planned"><h4>Video-grounded brand fit <span class="badge plan">Planned</span></h4><p>Gemini accepts a YouTube URL directly and analyses the video itself, up to ten per request. Brand safety stops being inferred from a title and starts being judged from what is actually on screen. The largest accuracy upgrade available to us.</p><span class="when">Week 1&ndash;2</span></div>
+    <div class="card planned"><h4>Per-creator creative direction <span class="badge plan">Planned</span></h4><p>Each cast creator gets a brief drafted from their own content patterns, their formats, their pacing, their recurring segments, instead of one campaign template sent to everyone.</p><span class="when">Week 3</span></div>
+    <div class="card planned"><h4>Blind validation <span class="badge plan">Planned</span></h4><p>A human ranks ten channels without seeing the tool's output, and we report the rank correlation honestly, whatever it says. The machinery is built; the ranking has to come from a person.</p><span class="when">Week 4&ndash;5</span></div>
+  </div>
+
+  <h3 style="font-size:16px;margin:0 0 12px">Where the product goes next</h3>
+  <div class="cards">
+    <div class="card planned"><h4>Always-on trend listening <span class="badge plan">Planned</span></h4><p>Trend context is already a dated, cited snapshot on disk. Refresh it on a schedule and the roster re-ranks itself as a trend rises, rather than being fixed at kickoff and going stale before the content ships.</p><span class="when">Direct answer to the stale-listening problem in the brief</span></div>
+    <div class="card planned"><h4>Content review at scale <span class="badge plan">Planned</span></h4><p>The same campaign rules file that scores a creator can check draft content against brand guidelines and flag claim and disclosure risk, which is the review bottleneck the brief names as time-intensive.</p><span class="when">Reuses the rules file already in the repo</span></div>
+    <div class="card planned"><h4>Close the loop on outcomes <span class="badge plan">Planned</span></h4><p>Feed campaign results back as the ground truth we do not have today. Weights stop being a judgement call and start being learned, and the claim can honestly move from faster to better.</p><span class="when">The real destination</span></div>
+  </div>
+</div></section>
+
+<section id="limits"><div class="wrap">
+  <p class="eyebrow">Provenance</p>
+  <h2 class="sec">What is real on this page, and what is not</h2>
+  <p class="lede">A tool a strategist has to defend in a client meeting is only useful if its limits are written down before the client finds them.</p>
+  <div class="two">
+    <div class="tblwrap"><table>
+      <thead><tr><th style="width:52%">On this page</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Channel names, subscriber counts, upload statistics</td><td>Real, pulled from the YouTube Data API</td></tr>
+        <tr><td>Engagement, momentum, speed to activate</td><td>Real, computed for all 70</td></tr>
+        <tr><td>Audience relevance, brand fit, trend fit</td><td>Real Gemini output, but only for the channels not tagged partial</td></tr>
+        <tr><td>Preset weightings and the four role profiles</td><td>Prototype defaults chosen by us, not agreed campaign settings</td></tr>
+        <tr><td>Trend snapshot behind trend fit</td><td>Researched and cited, not live Search-grounded</td></tr>
+      </tbody>
+    </table></div>
+    <div class="cards" style="grid-template-columns:1fr">
+      <div class="card"><h4>Not better picks</h4><p>There is no ground truth on which past creator selections succeeded, so accuracy cannot be demonstrated. The claim is faster and explainable, which is why every dimension carries a reason.</p></div>
+      <div class="card"><h4>No audience demographics</h4><p>Age and location are owner-only through YouTube Analytics. Audience relevance is a comment-based proxy and is labelled as one.</p></div>
+      <div class="card"><h4>Engagement favours mid-size creators</h4><p>Engagement rate falls as a channel grows, so the metric structurally favours mid-size channels. A deliberate bias, documented rather than hidden.</p></div>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  Creator Matchmaker &middot; NYU SPS Division of Programs in Business &middot;
+  <a href="https://github.com/Khushboo-Mishra/creator-matchmaker">Source on GitHub</a>
+</div></footer>
+
+<script>
+const DATA=[{"h":"@thinkmediatv","t":"Think Media","subs":3520000,"d":{"engagement":{"s":1.94,"r":"1.55% engagement across the last 15 uploads"},"momentum":{"s":4.14,"r":"last 5 uploads median 0.75x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@studiobinder","t":"StudioBinder","subs":2250000,"d":{"engagement":{"s":4.74,"r":"3.80% engagement across the last 15 uploads"},"momentum":{"s":4.3,"r":"last 5 uploads median 0.77x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@lonefox","t":"Lone Fox","subs":1780000,"d":{"engagement":{"s":5.78,"r":"4.63% engagement across the last 15 uploads"},"momentum":{"s":3.39,"r":"last 5 uploads median 0.61x the previous 10, fading"},"speed_to_activate":{"s":3.85,"r":"10 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@howfinity","t":"Howfinity","subs":1100000,"d":{"engagement":{"s":2.07,"r":"1.66% engagement across the last 15 uploads"},"momentum":{"s":5.72,"r":"last 5 uploads median 1.03x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"31 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@bandh","t":"B&H Photo Video Pro Audio","subs":1020000,"d":{"engagement":{"s":2.55,"r":"2.04% engagement across the last 15 uploads"},"momentum":{"s":7.3,"r":"last 5 uploads median 1.31x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@willpatersondesign","t":"Will Paterson","subs":1010000,"d":{"engagement":{"s":4.95,"r":"3.96% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.04x the previous 10, rising"},"speed_to_activate":{"s":4.23,"r":"11 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@niklaschristl","t":"Niklas Christl","subs":990000,"d":{"engagement":{"s":8.49,"r":"6.79% engagement across the last 15 uploads"},"momentum":{"s":1.28,"r":"last 5 uploads median 0.23x the previous 10, fading"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@ronillust","t":"ronillust","subs":983000,"d":{"engagement":{"s":8.6,"r":"6.88% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.96x the previous 10, rising"},"speed_to_activate":{"s":3.08,"r":"8 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@brandsanderson","t":"Brandon Sanderson","subs":903000,"d":{"engagement":{"s":3.08,"r":"2.46% engagement across the last 15 uploads"},"momentum":{"s":1.77,"r":"last 5 uploads median 0.32x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@filmcourage","t":"Film Courage","subs":802000,"d":{"engagement":{"s":1.32,"r":"1.06% engagement across the last 15 uploads"},"momentum":{"s":3.75,"r":"last 5 uploads median 0.67x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"45 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@millieadrian","t":"Modern Millie","subs":786000,"d":{"engagement":{"s":5.82,"r":"4.65% engagement across the last 15 uploads"},"momentum":{"s":4.53,"r":"last 5 uploads median 0.82x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@zoehongteaches","t":"Zoe Hong","subs":695000,"d":{"engagement":{"s":8.59,"r":"6.87% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.15x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@matthewencina","t":"Matthew Encina","subs":542000,"d":{"engagement":{"s":4.2,"r":"3.36% engagement across the last 15 uploads"},"momentum":{"s":3.04,"r":"last 5 uploads median 0.55x the previous 10, fading"},"speed_to_activate":{"s":1.92,"r":"5 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@lucaspeinador","t":"Lucas Peinador","subs":513000,"d":{"engagement":{"s":10.0,"r":"10.22% engagement across the last 15 uploads"},"momentum":{"s":2.65,"r":"last 5 uploads median 0.48x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@abiconnick","t":"Abi Connick","subs":436000,"d":{"engagement":{"s":6.57,"r":"5.26% engagement across the last 15 uploads"},"momentum":{"s":0.79,"r":"last 5 uploads median 0.14x the previous 10, fading"},"speed_to_activate":{"s":3.85,"r":"10 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@dsigners","t":"D.Signers","subs":434000,"d":{"engagement":{"s":3.14,"r":"2.52% engagement across the last 15 uploads"},"momentum":{"s":4.46,"r":"last 5 uploads median 0.80x the previous 10, fading"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@katie","t":"Katie Steckly","subs":404000,"d":{"engagement":{"s":4.17,"r":"3.34% engagement across the last 15 uploads"},"momentum":{"s":2.99,"r":"last 5 uploads median 0.54x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"28 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@jadebeason","t":"Jade Beason","subs":312000,"d":{"engagement":{"s":8.57,"r":"6.86% engagement across the last 15 uploads"},"momentum":{"s":4.55,"r":"last 5 uploads median 0.82x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"41 uploads in the last 90 days"},"audience_relevance":{"s":7.5,"r":"Viewers explicitly identify as small creators taking detailed notes on content planning and YouTube growth strategies, matching Milanote's target audience of emerging creators organizing creative projects."},"brand_fit":{"s":8.0,"r":"Jade's content focuses on content strategy, branding, and pre-production research (as seen in videos '4_RXnJA5Iag', 'yg1m82Y4CeI', and 'QnlflQv8m9E'), offering a clean, brand-safe educational format where visual project planning and moodboarding naturally integrate."},"trend_fit":{"s":7.5,"r":"The channel strongly aligns with rising trends like transparent process documentation and planning as part of production, demonstrating back-end building and research from scratch."}}},{"h":"@novelistjerryjenkins","t":"Jerry B. Jenkins","subs":243000,"d":{"engagement":{"s":4.84,"r":"3.87% engagement across the last 15 uploads"},"momentum":{"s":2.71,"r":"last 5 uploads median 0.49x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@anikjaindesign","t":"Anik Jain","subs":190000,"d":{"engagement":{"s":5.23,"r":"4.18% engagement across the last 15 uploads"},"momentum":{"s":5.4,"r":"last 5 uploads median 0.97x the previous 10, fading"},"speed_to_activate":{"s":3.85,"r":"10 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@reedsy","t":"Reedsy","subs":184000,"d":{"engagement":{"s":6.53,"r":"5.22% engagement across the last 15 uploads"},"momentum":{"s":6.28,"r":"last 5 uploads median 1.13x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"47 uploads in the last 90 days"},"audience_relevance":{"s":7.8,"r":"The audience is heavily composed of fiction writers and aspiring authors discussing narrative craft, story planning, and novel-writing techniques."},"brand_fit":{"s":7.2,"r":"Reedsy maintains a safe, educational tone featuring creative craft masterclasses and publishing tool tutorials like [MCirqXgxwyQ], [Bd0mLPQE_34], and [QUOrw2gchSM] where a visual writing-research and story-planning workflow fits naturally, though Reedsy is itself a commercial author services platform."},"trend_fit":{"s":7.0,"r":"The channel reflects 2026 platform dynamics by balancing long-form masterclasses and live writing sessions for retention with short-form writing tips for discovery (Trend 4), while treating pre-writing and story planning as essential parts of production (Trend 3)."}}},{"h":"@themediainsider","t":"The Media Insider","subs":158000,"d":{"engagement":{"s":3.89,"r":"3.12% engagement across the last 15 uploads"},"momentum":{"s":6.78,"r":"last 5 uploads median 1.22x the previous 10, rising"},"speed_to_activate":{"s":3.46,"r":"9 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@hallease","t":"Hallease","subs":138000,"d":{"engagement":{"s":10.0,"r":"11.06% engagement across the last 15 uploads"},"momentum":{"s":6.14,"r":"last 5 uploads median 1.11x the previous 10, rising"},"speed_to_activate":{"s":5.77,"r":"15 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@cjcawleydesign","t":"Cj Cawley","subs":134000,"d":{"engagement":{"s":7.46,"r":"5.97% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 7.25x the previous 10, rising"},"speed_to_activate":{"s":1.15,"r":"3 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@kuzillon","t":"Kuzillon","subs":120000,"d":{"engagement":{"s":10.0,"r":"9.91% engagement across the last 15 uploads"},"momentum":{"s":8.01,"r":"last 5 uploads median 1.44x the previous 10, rising"},"speed_to_activate":{"s":3.08,"r":"8 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@kraymerart","t":"Kraymer Art","subs":83500,"d":{"engagement":{"s":3.03,"r":"2.42% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 2.08x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@ulaburgiel1","t":"Ula Burgiel","subs":81100,"d":{"engagement":{"s":5.14,"r":"4.12% engagement across the last 15 uploads"},"momentum":{"s":6.85,"r":"last 5 uploads median 1.23x the previous 10, rising"},"speed_to_activate":{"s":3.85,"r":"10 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@mandilynnwrites","t":"Mandi Lynn - Stone Ridge Books","subs":77500,"d":{"engagement":{"s":5.75,"r":"4.60% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 2.76x the previous 10, rising"},"speed_to_activate":{"s":7.69,"r":"20 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@sabrinalatoya","t":"Sabrina Latoya","subs":75400,"d":{"engagement":{"s":7.75,"r":"6.20% engagement across the last 15 uploads"},"momentum":{"s":6.75,"r":"last 5 uploads median 1.22x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@dantierandbalogh","t":"Dantier and Balogh Design Studio","subs":67000,"d":{"engagement":{"s":10.0,"r":"8.38% engagement across the last 15 uploads"},"momentum":{"s":5.64,"r":"last 5 uploads median 1.01x the previous 10, rising"},"speed_to_activate":{"s":1.54,"r":"4 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@graphiq_vibe","t":"GraphiqVibe","subs":58300,"d":{"engagement":{"s":6.56,"r":"5.24% engagement across the last 15 uploads"},"momentum":{"s":2.59,"r":"last 5 uploads median 0.47x the previous 10, fading"},"speed_to_activate":{"s":8.08,"r":"21 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@bitemegames","t":"BiteMe Games","subs":57500,"d":{"engagement":{"s":4.03,"r":"3.23% engagement across the last 15 uploads"},"momentum":{"s":2.62,"r":"last 5 uploads median 0.47x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"34 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@ryancampfilms","t":"Camp Films","subs":55200,"d":{"engagement":{"s":5.28,"r":"4.22% engagement across the last 15 uploads"},"momentum":{"s":5.58,"r":"last 5 uploads median 1.00x the previous 10, rising"},"speed_to_activate":{"s":1.92,"r":"5 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@indiegameclinic","t":"Indie Game Clinic","subs":52100,"d":{"engagement":{"s":1.71,"r":"1.37% engagement across the last 14 uploads"},"momentum":{"s":5.04,"r":"last 5 uploads median 0.91x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"43 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@jackwatsondesigns","t":"Jack Watson","subs":51500,"d":{"engagement":{"s":5.06,"r":"4.05% engagement across the last 15 uploads"},"momentum":{"s":5.27,"r":"last 5 uploads median 0.95x the previous 10, fading"},"speed_to_activate":{"s":5.0,"r":"13 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@yourinteriorspace","t":"YourInteriorSpace","subs":50200,"d":{"engagement":{"s":3.48,"r":"2.78% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.61x the previous 10, rising"},"speed_to_activate":{"s":0.38,"r":"1 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@justinphillip","t":"Justin Phillip","subs":47100,"d":{"engagement":{"s":4.49,"r":"3.59% engagement across the last 15 uploads"},"momentum":{"s":3.82,"r":"last 5 uploads median 0.69x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"27 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@authorkristenmartin","t":"Kristen Martin","subs":46900,"d":{"engagement":{"s":4.05,"r":"3.24% engagement across the last 15 uploads"},"momentum":{"s":7.11,"r":"last 5 uploads median 1.28x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":3.2,"r":"Audience comments revolve entirely around physical antique book collecting, bookshelf shelving extenders, and commentary on AI destroying physical books rather than digital project planning, writing workflows, or visual ideation."},"brand_fit":{"s":4.5,"r":"While the creator identifies as an indie author, her recent content consists primarily of physical home decor, bookshelf styling vlogs like [vxeSNRzfZAg], and brief motivational clips like [SVdfDkxfAWI] rather than digital creative workflow demonstrations."},"trend_fit":{"s":3.0,"r":"The channel's recent output is dominated by physical bookshelf organization shorts and an anti-AI reaction short rather than rising creative industry trends like transparent digital process documentation or pre-production planning workflows."}}},{"h":"@screenwritinginla","t":"Screenwriting In LA","subs":46100,"d":{"engagement":{"s":4.05,"r":"3.24% engagement across the last 15 uploads"},"momentum":{"s":2.67,"r":"last 5 uploads median 0.48x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"33 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@gauravmandaldesign","t":"Gaurav Mandal","subs":43300,"d":{"engagement":{"s":3.85,"r":"3.08% engagement across the last 15 uploads"},"momentum":{"s":2.09,"r":"last 5 uploads median 0.38x the previous 10, fading"},"speed_to_activate":{"s":2.69,"r":"7 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@natalialeigh","t":"Natalia Leigh","subs":42600,"d":{"engagement":{"s":9.42,"r":"7.54% engagement across the last 15 uploads"},"momentum":{"s":4.47,"r":"last 5 uploads median 0.81x the previous 10, fading"},"speed_to_activate":{"s":1.92,"r":"5 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@katesbookdate","t":"Katesbookdate","subs":35300,"d":{"engagement":{"s":3.58,"r":"2.87% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 2.77x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"32 uploads in the last 90 days"},"audience_relevance":{"s":7.5,"r":"The audience includes numerous aspiring and self-published authors who explicitly discuss managing chaotic ideas, outlining, and organizing plot points and series arcs."},"brand_fit":{"s":7.5,"r":"Author vlogs such as [tPHYRR67Toc] and [WhV0M6WJS2U] provide a natural, brand-safe environment to demonstrate Milanote's writing and planning features for brainstorming novel outlines and series bibles, while easily accommodating clear sponsorship disclosures."},"trend_fit":{"s":7.0,"r":"Her focus on conversational, behind-the-scenes book drafting and life updates in long-form vlogs aligns directly with rising 2026 trends favoring authentic, less-polished process documentation and long-form retention formats."}}},{"h":"@hanselah","t":"HanSelah","subs":30400,"d":{"engagement":{"s":3.01,"r":"2.41% engagement across the last 15 uploads"},"momentum":{"s":4.67,"r":"last 5 uploads median 0.84x the previous 10, fading"},"speed_to_activate":{"s":5.0,"r":"13 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@383design","t":"383 Design Studio","subs":27400,"d":{"engagement":{"s":10.0,"r":"9.86% engagement across the last 15 uploads"},"momentum":{"s":5.06,"r":"last 5 uploads median 0.91x the previous 10, fading"},"speed_to_activate":{"s":6.92,"r":"18 uploads in the last 90 days"},"audience_relevance":{"s":8.5,"r":"The audience consists of fashion designers, students, and apparel entrepreneurs actively asking about workflow tools, software, and organization methods for tech packs and design development."},"brand_fit":{"s":8.8,"r":"The channel's instructional, educational tone provides a seamless fit for showing Milanote as a visual workspace for fashion concept planning, moodboards, and product development workflows."},"trend_fit":{"s":8.7,"r":"The channel strongly aligns with current creative trends by evaluating hybrid AI workflows with critical human curation and treating pre-production planning as an essential phase of production."}}},{"h":"@art_ikki","t":"Artikki | Kritika","subs":24500,"d":{"engagement":{"s":2.91,"r":"2.33% engagement across the last 15 uploads"},"momentum":{"s":2.94,"r":"last 5 uploads median 0.53x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"27 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@gamedevbeginner","t":"Game Dev Beginner","subs":23400,"d":{"engagement":{"s":6.01,"r":"4.80% engagement across the last 15 uploads"},"momentum":{"s":8.61,"r":"last 5 uploads median 1.55x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@creadevlabs","t":"CreaDev Labs","subs":12500,"d":{"engagement":{"s":2.82,"r":"2.25% engagement across the last 15 uploads"},"momentum":{"s":3.34,"r":"last 5 uploads median 0.60x the previous 10, fading"},"speed_to_activate":{"s":0.77,"r":"2 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@themhinteriors","t":"The MH Interiors","subs":10400,"d":{"engagement":{"s":2.06,"r":"1.65% engagement across the last 15 uploads"},"momentum":{"s":2.21,"r":"last 5 uploads median 0.40x the previous 10, fading"},"speed_to_activate":{"s":10.0,"r":"34 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@orithekidd","t":"orithekid","subs":7450,"d":{"engagement":{"s":8.22,"r":"6.57% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.15x the previous 10, rising"},"speed_to_activate":{"s":0.38,"r":"1 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@decodingfashionyt","t":"Decoding Fashion","subs":5980,"d":{"engagement":{"s":2.47,"r":"1.98% engagement across the last 15 uploads"},"momentum":{"s":4.96,"r":"last 5 uploads median 0.89x the previous 10, fading"},"speed_to_activate":{"s":1.92,"r":"5 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@justinpetn","t":"Justin P. Etienne","subs":5940,"d":{"engagement":{"s":8.29,"r":"6.63% engagement across the last 15 uploads"},"momentum":{"s":7.91,"r":"last 5 uploads median 1.42x the previous 10, rising"},"speed_to_activate":{"s":3.46,"r":"9 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@bellafordin","t":"Bella Fordin","subs":5710,"d":{"engagement":{"s":5.31,"r":"4.25% engagement across the last 15 uploads"},"momentum":{"s":3.26,"r":"last 5 uploads median 0.59x the previous 10, fading"},"speed_to_activate":{"s":1.92,"r":"5 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@ldjwrites","t":"LDJwrites","subs":5450,"d":{"engagement":{"s":10.0,"r":"9.75% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 2.14x the previous 10, rising"},"speed_to_activate":{"s":0.77,"r":"2 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@vvivaa","t":"vvivaa","subs":3280,"d":{"engagement":{"s":3.87,"r":"3.10% engagement across the last 15 uploads"},"momentum":{"s":7.81,"r":"last 5 uploads median 1.41x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"28 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@serketstudios888","t":"Serket Studios","subs":3260,"d":{"engagement":{"s":4.3,"r":"3.44% engagement across the last 15 uploads"},"momentum":{"s":3.96,"r":"last 5 uploads median 0.71x the previous 10, fading"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@jungogymstudios","t":"Alan | JungoGymStudios","subs":3090,"d":{"engagement":{"s":8.32,"r":"6.66% engagement across the last 9 uploads"},"momentum":{"s":null,"r":"not measurable: needs 15 uploads to compare, found 9"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@alexanderbehne606","t":"Alexander Behne","subs":2380,"d":{"engagement":{"s":4.89,"r":"3.91% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 9.30x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@annakovalchenko","t":"Anna Kovalchenko","subs":1620,"d":{"engagement":{"s":2.9,"r":"2.32% engagement across the last 15 uploads"},"momentum":{"s":8.02,"r":"last 5 uploads median 1.44x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@bydavidkollarbrand","t":"By David Kollar Brand","subs":1430,"d":{"engagement":{"s":2.48,"r":"1.98% engagement across the last 15 uploads"},"momentum":{"s":5.76,"r":"last 5 uploads median 1.04x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@effiejoestockauthor","t":"Effie Joe Stock","subs":1010,"d":{"engagement":{"s":4.21,"r":"3.36% engagement across the last 15 uploads"},"momentum":{"s":7.49,"r":"last 5 uploads median 1.35x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@torunnkjolberg2221","t":"Torunn Kjolberg","subs":582,"d":{"engagement":{"s":3.58,"r":"2.87% engagement across the last 15 uploads"},"momentum":{"s":1.36,"r":"last 5 uploads median 0.25x the previous 10, fading"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@gamemadehere","t":"Game Made Here","subs":504,"d":{"engagement":{"s":3.89,"r":"3.11% engagement across the last 15 uploads"},"momentum":{"s":2.56,"r":"last 5 uploads median 0.46x the previous 10, fading"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@professorkyler5738","t":"Professor Kyler","subs":500,"d":{"engagement":{"s":3.91,"r":"3.13% engagement across the last 11 uploads"},"momentum":{"s":null,"r":"not measurable: needs 15 uploads to compare, found 11"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@joeflix.studios","t":"Joeflix Studios ","subs":432,"d":{"engagement":{"s":10.0,"r":"17.07% engagement across the last 15 uploads"},"momentum":{"s":1.79,"r":"last 5 uploads median 0.32x the previous 10, fading"},"speed_to_activate":{"s":1.54,"r":"4 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@erikknudsenfilms","t":"Erik Knudsen - One Day Films","subs":202,"d":{"engagement":{"s":4.37,"r":"3.49% engagement across the last 15 uploads"},"momentum":{"s":2.48,"r":"last 5 uploads median 0.45x the previous 10, fading"},"speed_to_activate":{"s":3.08,"r":"8 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@camila.interiors","t":"Camila Interiors","subs":158,"d":{"engagement":{"s":8.98,"r":"7.19% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 3.97x the previous 10, rising"},"speed_to_activate":{"s":3.46,"r":"9 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@jram_art","t":"JRAM ART","subs":69,"d":{"engagement":{"s":2.85,"r":"2.28% engagement across the last 15 uploads"},"momentum":{"s":5.57,"r":"last 5 uploads median 1.00x the previous 10, rising"},"speed_to_activate":{"s":10.0,"r":"50 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@jaystartds","t":"JaystarTDS","subs":45,"d":{"engagement":{"s":6.68,"r":"5.34% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 7.75x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@depardo_visionaries","t":"Depardo Graphic Arts","subs":44,"d":{"engagement":{"s":8.43,"r":"6.75% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 2.00x the previous 10, rising"},"speed_to_activate":{"s":0.0,"r":"0 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}},{"h":"@game_designers","t":"GameDesigners","subs":37,"d":{"engagement":{"s":3.32,"r":"2.66% engagement across the last 15 uploads"},"momentum":{"s":10.0,"r":"last 5 uploads median 4.88x the previous 10, rising"},"speed_to_activate":{"s":5.38,"r":"14 uploads in the last 90 days"},"audience_relevance":{"s":null,"r":"model scoring skipped"},"brand_fit":{"s":null,"r":"model scoring skipped"},"trend_fit":{"s":null,"r":"model scoring skipped"}}}];
+const DIMS=[["audience_relevance","Audience relevance"],["engagement","Engagement"],["brand_fit","Brand fit"],["momentum","Momentum"],["speed_to_activate","Speed to activate"],["trend_fit","Trend fit"]];
+const ROLES=[
+ {id:"awareness",name:"Awareness",colour:"#D98324",w:{audience_relevance:3,momentum:2.5,trend_fit:1.5,engagement:.5,brand_fit:1,speed_to_activate:.5},why:"widest relevant reach"},
+ {id:"demo",name:"Demonstration",colour:"#B86A14",w:{brand_fit:3,audience_relevance:2,engagement:1,momentum:.5,speed_to_activate:1,trend_fit:1},why:"shows the product in real work"},
+ {id:"proof",name:"Social proof",colour:"#2E6BB8",w:{engagement:3.5,audience_relevance:2,brand_fit:1,momentum:.5,speed_to_activate:.5,trend_fit:.5},why:"trusted in a narrow niche"},
+ {id:"convert",name:"Conversion",colour:"#6FA8DC",w:{audience_relevance:3,brand_fit:2,engagement:2,trend_fit:1,momentum:.5,speed_to_activate:.5},why:"audience already buys tools"}];
+const PRESETS={
+ "Balanced":{audience_relevance:1,engagement:1,brand_fit:1,momentum:1,speed_to_activate:1,trend_fit:1},
+ "React fast":{speed_to_activate:3,momentum:2.5,trend_fit:2,audience_relevance:1,brand_fit:1,engagement:.5},
+ "Safety first":{brand_fit:3.5,audience_relevance:2,engagement:1.5,momentum:.5,speed_to_activate:.5,trend_fit:.5},
+ "Proof over reach":{engagement:3,audience_relevance:2.5,brand_fit:1.5,trend_fit:1,momentum:1,speed_to_activate:.5}};
+
+let weights={...PRESETS["Balanced"]}, dropped=new Set(), open=new Set(), active="Balanced", lastMs=0;
+
+function fit(c,w){let t=0,s=0;for(const[k]of DIMS){const v=c.d[k].s;if(v==null)continue;const q=w[k]??1;t+=v*q;s+=q}return s?t/s:null}
+function ranked(w){return DATA.filter(c=>!dropped.has(c.h)).map(c=>[c,fit(c,w)]).filter(r=>r[1]!=null).sort((a,b)=>b[1]-a[1])}
+
+function cast(){
+  const pool=ranked(weights).slice(0,12).map(r=>r[0]);
+  let best=null;
+  const walk=(i,used,acc,total)=>{
+    if(i===ROLES.length){if(!best||total>best.total)best={acc:[...acc],total};return}
+    for(const c of pool){ if(used.has(c.h))continue;
+      const f=fit(c,ROLES[i].w); if(f==null)continue;
+      used.add(c.h); acc.push([ROLES[i],c,f]); walk(i+1,used,acc,total+f);
+      acc.pop(); used.delete(c.h); } };
+  walk(0,new Set(),[],0);
+  return best?best.acc:[];
+}
+
+function render(){
+  const t0=performance.now();
+  const rows=ranked(weights), casting=cast(), castIds=new Set(casting.map(c=>c[1].h));
+  lastMs=performance.now()-t0;
+
+  document.getElementById("roles").innerHTML=ROLES.map(r=>{
+    const hit=casting.find(c=>c[0].id===r.id);
+    return `<div class="role" style="--rc:${r.colour}">
+      <div class="rname">${r.name}</div>
+      <div class="rcast">${hit?hit[1].h:'<span class="empty">unfilled</span>'}</div>
+      <div class="rwhy">${hit?`${hit[2].toFixed(1)} / 10 for ${r.why}`:"no remaining candidate scores here"}</div></div>`;
+  }).join("");
+
+  document.getElementById("count").textContent=
+    `${rows.length} ranked${dropped.size?` &middot; ${dropped.size} dropped`:""}`.replace("&middot;","·");
+
+  document.getElementById("list").innerHTML=rows.slice(0,14).map(([c,f],i)=>{
+    const full=DIMS.every(([k])=>c.d[k].s!=null), isOpen=open.has(c.h);
+    const bars=DIMS.map(([k,label])=>{const v=c.d[k].s;
+      return v==null?`<div class="bar null" title="${label}: not measured"></div>`
+        :`<div class="bar" title="${label}: ${v}"><i style="height:${Math.max(6,v*3)}px"></i></div>`}).join("");
+    const why=isOpen?`<div class="why">${DIMS.map(([k,label])=>
+      `<div><b>${label}:</b> ${c.d[k].s==null?"not measured":c.d[k].s+" / 10"} — ${c.d[k].r}</div>`).join("")}</div>`:"";
+    return `<li class="item${castIds.has(c.h)?" cast":""}">
+      <div class="rank">${i+1}</div>
+      <div class="who"><div class="handle">${c.h}${full?"":'<span class="tag">partial</span>'}</div>
+        <div class="meta">${c.t} · ${c.subs.toLocaleString()} subscribers</div></div>
+      <div class="bars">${bars}</div>
+      <div class="right"><div class="score">${f.toFixed(2)}<small>WEIGHTED</small></div></div>
+      <div style="grid-column:1/-1;display:flex;gap:8px">
+        <button class="act" data-why="${c.h}">${isOpen?"Hide reasons":"Why this score"}</button>
+        <button class="act" data-drop="${c.h}">Remove and recast</button></div>
+      ${why}</li>`;
+  }).join("");
+
+  document.getElementById("meter").innerHTML=
+    `Reordered ${rows.length} candidates and recast 4 roles in <b>${lastMs.toFixed(1)} ms</b>.<br>No network request was made.`
+    + (dropped.size?`<br><button class="act" id="reset" style="margin-top:10px;width:auto;padding:5px 12px">Restore ${dropped.size} dropped</button>`:"");
+}
+
+function drawControls(){
+  document.getElementById("presets").innerHTML=Object.keys(PRESETS).map(p=>
+    `<button class="chip" data-preset="${p}" aria-pressed="${p===active}">${p}</button>`).join("");
+  document.getElementById("sliders").innerHTML=DIMS.map(([k,label])=>
+    `<div class="slider"><div class="slabel"><b>${label}</b><span id="v-${k}">${(weights[k]??1).toFixed(1)}×</span></div>
+     <input type="range" id="w-${k}" min="0" max="4" step="0.5" value="${weights[k]??1}"></div>`).join("");
+}
+
+document.addEventListener("input",e=>{
+  const id=e.target.id||"";
+  if(!id.startsWith("w-"))return;
+  const k=id.slice(2); weights[k]=parseFloat(e.target.value);
+  document.getElementById("v-"+k).textContent=weights[k].toFixed(1)+"×";
+  active=null; document.querySelectorAll("[data-preset]").forEach(b=>b.setAttribute("aria-pressed","false"));
+  render();
+});
+document.addEventListener("click",e=>{
+  const p=e.target.closest("[data-preset]"), w=e.target.closest("[data-why]"),
+        d=e.target.closest("[data-drop]"), r=e.target.closest("#reset");
+  if(p){active=p.dataset.preset; weights={...PRESETS[active]}; drawControls(); render();}
+  else if(w){const h=w.dataset.why; open.has(h)?open.delete(h):open.add(h); render();}
+  else if(d){dropped.add(d.dataset.drop); render();}
+  else if(r){dropped.clear(); render();}
+});
+
+drawControls(); render();
+</script>
+</body>
+</html>
