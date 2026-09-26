@@ -141,6 +141,25 @@ footer a{color:var(--muted)}
 }
 @media (prefers-reduced-motion:no-preference){.item,.bar i{transition:all .18s ease}}
 
+.spine{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:30px}
+.sp{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 14px;
+  font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:600;display:flex;flex-direction:column;gap:4px}
+.sp span{font-size:11px;color:var(--amber);letter-spacing:1.2px}
+.rh{font-size:16px;margin:0 0 12px;font-weight:600}
+.weeks{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.week{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;
+  border-left:3px solid var(--faint);display:flex;flex-direction:column;gap:11px}
+.week header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.week .wk{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:1.3px;
+  text-transform:uppercase;color:var(--amber)}
+.week h4{margin:0;font-size:17px;font-weight:600;flex:1;min-width:180px}
+.week ul{margin:0;padding-left:19px;display:flex;flex-direction:column;gap:5px}
+.week li{font-size:13.5px;color:var(--muted)}
+.week .dv{margin:auto 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+.week .dv b{color:var(--text);font-weight:600}
+@media (max-width:1000px){.spine{grid-template-columns:repeat(2,1fr)}.weeks{grid-template-columns:1fr}}
+@media (max-width:620px){.spine{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -220,26 +239,78 @@ footer a{color:var(--muted)}
 <section id="roadmap"><div class="wrap">
   <p class="eyebrow">What a month buys</p>
   <h2 class="sec">Roadmap</h2>
-  <p class="lede">Selected teams are announced on 5 October and present on 11 November. The scoring engine is finished, so the five weeks between buy the interaction layer and the accuracy upgrades. Everything below is marked for what it actually is.</p>
+  <p class="lede">Selected teams are announced on 5 October and present on 11 November. The scoring engine and the casting interface already work, so the four weeks between go into evidence, balance and validation. Every item below is marked for what it actually is.</p>
 
-  <h3 style="font-size:16px;margin:0 0 12px">Built and running</h3>
-  <div class="cards" style="margin-bottom:26px">
+  <div class="spine">
+    <div class="sp"><span>01</span>Discover</div>
+    <div class="sp"><span>02</span>Screen economically</div>
+    <div class="sp"><span>03</span>Score deeply</div>
+    <div class="sp"><span>04</span>Build a balanced roster</div>
+    <div class="sp"><span>05</span>Explain every recommendation</div>
+  </div>
+
+  <h3 class="rh">Built and running</h3>
+  <div class="cards" style="margin-bottom:30px">
     <div class="card built"><h4>Quota-aware data engine <span class="badge live">Live</span></h4><p>Resolves channels by handle at one unit each and never searches. Caches 50 uploads, statistics and comments per channel, with schema validation and a resumable, rate-limit-aware scoring run.</p><span class="when">70 channels cached in 1m53s</span></div>
     <div class="card built"><h4>Six-dimension scoring <span class="badge live">Live</span></h4><p>Three arithmetic dimensions and three from Gemini with forced JSON output. Every score persists with a one-sentence reason. Unmeasurable dimensions return null rather than a misleading zero.</p><span class="when">58 tests, including guards on the scoring rules</span></div>
-    <div class="card built"><h4>Weights and role casting <span class="badge live">Live</span></h4><p>The prototype above. Sliders reorder from stored scores in single-digit milliseconds, and four roles are solved as a set so swapping one creator reassigns the others.</p><span class="when">Shipped ahead of plan</span></div>
+    <div class="card built"><h4>Weights and role casting <span class="badge live">Live</span></h4><p>Weights change without rerunning Gemini, re-ranking from stored scores in single-digit milliseconds. Creators can be dropped from a roster, and four roles are solved as a set so the others reassign.</p><span class="when">The prototype above, shipped ahead of plan</span></div>
   </div>
 
-  <h3 style="font-size:16px;margin:0 0 12px">5 October to 11 November</h3>
-  <div class="cards" style="margin-bottom:26px">
-    <div class="card planned"><h4>Video-grounded brand fit <span class="badge plan">Planned</span></h4><p>Gemini accepts a YouTube URL directly and analyses the video itself, up to ten per request. Brand safety stops being inferred from a title and starts being judged from what is actually on screen. The largest accuracy upgrade available to us.</p><span class="when">Week 1&ndash;2</span></div>
-    <div class="card planned"><h4>Per-creator creative direction <span class="badge plan">Planned</span></h4><p>Each cast creator gets a brief drafted from their own content patterns, their formats, their pacing, their recurring segments, instead of one campaign template sent to everyone.</p><span class="when">Week 3</span></div>
-    <div class="card planned"><h4>Blind validation <span class="badge plan">Planned</span></h4><p>A human ranks ten channels without seeing the tool's output, and we report the rank correlation honestly, whatever it says. The machinery is built; the ranking has to come from a person.</p><span class="when">Week 4&ndash;5</span></div>
+  <h3 class="rh">5 October to 11 November</h3>
+  <div class="weeks">
+    <article class="week">
+      <header><span class="wk">Week 1</span><h4>Campaign setup and smart shortlisting</h4><span class="badge plan">Planned</span></header>
+      <ul>
+        <li>Campaign inputs for product, objective, target audience and brand requirements</li>
+        <li>Controls for reach against engagement, established against emerging creators, evergreen against trend relevance</li>
+        <li>Screen the full candidate pool on deterministic metrics first</li>
+        <li>Send only the strongest 20 or so candidates for deeper Gemini scoring</li>
+        <li>Label fully scored, arithmetic-only and incomplete results distinctly</li>
+      </ul>
+      <p class="dv"><b>Deliverable.</b> A strategist configures a campaign and generates an explainable, cost-controlled shortlist without editing code.</p>
+    </article>
+
+    <article class="week">
+      <header><span class="wk">Week 2</span><h4>Evidence-backed AI scoring</h4><span class="badge plan">Planned</span></header>
+      <ul>
+        <li>Calibrate audience relevance embeddings against blind human judgements</li>
+        <li>Strengthen brand fit using titles, descriptions, comments and sponsorship signals</li>
+        <li>Review transcripts or selected videos for finalists only</li>
+        <li>Dated, cached trend snapshots with citations preserved</li>
+        <li>Show the evidence and the confidence behind each AI-assisted score</li>
+      </ul>
+      <p class="dv"><b>Deliverable.</b> More defensible audience relevance, brand fit and trend fit, each traceable to its evidence.</p>
+    </article>
+
+    <article class="week">
+      <header><span class="wk">Week 3</span><h4>Interactive roster builder</h4><span class="badge plan">Planned</span></header>
+      <ul>
+        <li>Compare alternative roster combinations side by side</li>
+        <li>Detect audience overlap and excessive similarity between chosen creators</li>
+        <li>Balance reach, engagement, creator size, audience coverage, content style and trend alignment</li>
+        <li>Build on the weighting and swap behaviour already working in the prototype</li>
+      </ul>
+      <p class="dv"><b>Deliverable.</b> A casting assistant that recommends a balanced portfolio rather than a leaderboard.</p>
+    </article>
+
+    <article class="week">
+      <header><span class="wk">Week 4</span><h4>Validation and campaign reporting</h4><span class="badge plan">Planned</span></header>
+      <ul>
+        <li>Compare model and blind human rankings using Spearman correlation</li>
+        <li>Measure score stability across repeated model runs</li>
+        <li>Test campaign scenarios beyond Milanote</li>
+        <li>Handle missing data and API failures visibly rather than silently</li>
+        <li>Export a report: recommended roster, score breakdowns, evidence, audience coverage, risks and alternatives</li>
+        <li>Document API quota and cost requirements</li>
+      </ul>
+      <p class="dv"><b>Deliverable.</b> A tested, transparent prototype that can carry a real campaign-planning conversation.</p>
+    </article>
   </div>
 
-  <h3 style="font-size:16px;margin:0 0 12px">Where the product goes next</h3>
+  <h3 class="rh" style="margin-top:30px">Where the product goes next</h3>
   <div class="cards">
-    <div class="card planned"><h4>Always-on trend listening <span class="badge plan">Planned</span></h4><p>Trend context is already a dated, cited snapshot on disk. Refresh it on a schedule and the roster re-ranks itself as a trend rises, rather than being fixed at kickoff and going stale before the content ships.</p><span class="when">Direct answer to the stale-listening problem in the brief</span></div>
-    <div class="card planned"><h4>Content review at scale <span class="badge plan">Planned</span></h4><p>The same campaign rules file that scores a creator can check draft content against brand guidelines and flag claim and disclosure risk, which is the review bottleneck the brief names as time-intensive.</p><span class="when">Reuses the rules file already in the repo</span></div>
+    <div class="card planned"><h4>Always-on trend listening <span class="badge plan">Planned</span></h4><p>Trend context is already a dated, cited snapshot on disk. Refresh it on a schedule and the roster re-ranks as a trend rises, rather than being fixed at kickoff and going stale before content ships.</p><span class="when">Answers the stale-listening problem in the brief</span></div>
+    <div class="card planned"><h4>Content review at scale <span class="badge plan">Planned</span></h4><p>The same campaign rules file that scores a creator can check draft content against brand guidelines and flag claim and disclosure risk, the review bottleneck the brief names as time-intensive.</p><span class="when">Reuses the rules file already in the repo</span></div>
     <div class="card planned"><h4>Close the loop on outcomes <span class="badge plan">Planned</span></h4><p>Feed campaign results back as the ground truth we do not have today. Weights stop being a judgement call and start being learned, and the claim can honestly move from faster to better.</p><span class="when">The real destination</span></div>
   </div>
 </div></section>
