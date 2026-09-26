@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-09-26T14:59:58.715763+00:00",
+  "model": "gemini-3.8-flash",
+  "rules_sha256": "a696b73104c4c55c1d4a9e3813cc426532b729e119d073cee0e962fabb33dbf1",
+  "context": "Trends rising on YouTube among creative professionals, as of late September 2026.\nGathered from published 2026 trend reporting, not from a live Search-grounded call.\n\n1. Transparent process documentation. Creators are showing how work actually gets\nmade rather than only the finished piece: behind-the-scenes access and workflow\nwalkthroughs are now a standard format for studios and solo creatives, not a\nbonus extra. Relevant because a visual planning board is the artifact such a\nvideo is built around.\n\n2. Hybrid AI workflows with human curation kept visible. The 2026 framing has\nmoved from \"AI replaces the creative\" to \"AI is a teammate that handles\nrepetitive work while human taste drives story and style\". Videos increasingly\nshow the judgement step explicitly, which is where collection, research and\nselection tooling appears on screen.\n\n3. Planning treated as part of production, not a preamble. Motion and video are\nbeing planned from the brief onward rather than adapted from stills afterwards,\nso pre-production, storyboarding and concept development are getting their own\nvideos instead of a montage at the start of a making-of.\n\n4. Long-form as the loyalty format, Shorts as discovery. Shorts spark the first\nview, long-form builds trust and retention. Tutorial and process content is\nconsolidating into longer, more structured videos, which favours creators who\ncan show a complete workflow end to end.\n\n5. Video podcasts as a default second format. Audio-only is losing ground to\nvideo podcasts across YouTube, so creative-industry commentary and interview\ncontent is increasingly filmed, and shows more of a working environment.\n\n6. Authenticity over polish. Sincere, less-produced video is outperforming\nheavily polished output, which raises the value of genuine working process\nfootage over staged studio shots.\n\nNot included on purpose: evergreen topics like \"how to be more productive\",\ngeneric software reviews, and anything that mentions a brand without a workflow.",
+  "citations": [
+    "https://www.musicbed.com/articles/filmmaking/youtube/content-creator-trend-report-2026/",
+    "https://vidiq.com/blog/post/future-youtube-trends/",
+    "https://www.epidemicsound.com/blog/youtube-trends-2026/",
+    "https://elements.envato.com/learn/motion-design-trends",
+    "https://www.uscreen.tv/blog/video-creator-trends/"
+  ],
+  "source": "manual"
+}

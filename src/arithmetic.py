@@ -2,6 +2,12 @@
 
 Owner: data lane.
 
+A dimension that cannot be computed returns None, never 0.0. Zero is a real
+score meaning "measured, and bad"; None means "not measurable on this channel".
+Collapsing the two made a nine-upload channel rank as if it were dying.
+rank_correlation.tool_ranking() skips None and renormalises the weights, so a
+channel is ranked on the dimensions it does have.
+
 Medians for view counts: one viral video should not rescue a dead channel.
 Engagement is the exception and is a mean, because it averages per-video RATES,
 which are already bounded and far less spiky than raw views. Say so if asked.
@@ -43,7 +49,7 @@ def engagement(videos):
         if v.get("views")
     ]
     if not rates:
-        return 0.0, "no videos with view counts"
+        return None, "not measurable: no uploads with view counts"
     mean_rate = sum(rates) / len(rates)
     return (
         _clamp10(mean_rate, ENGAGEMENT_ANCHOR),
@@ -54,7 +60,7 @@ def engagement(videos):
 def momentum(videos):
     """Median views of the last 5 uploads over the median of the 10 before."""
     if len(videos) < RATE_WINDOW:
-        return 0.0, (
+        return None, (
             f"not measurable: needs {RATE_WINDOW} uploads to compare, "
             f"found {len(videos)}"
         )
@@ -63,7 +69,7 @@ def momentum(videos):
         v["views"] for v in videos[MOMENTUM_RECENT:RATE_WINDOW]
     )
     if prior == 0:
-        return 0.0, "no prior views to compare against"
+        return None, "not measurable: no prior views to compare against"
     ratio = recent / prior
     direction = "rising" if ratio > 1 else "fading"
     return (
@@ -79,6 +85,8 @@ def speed_to_activate(videos):
     Reads every cached upload, not the 15-upload window the rate dimensions use:
     a frequency count capped at 15 cannot reach its own anchor of 26.
     """
+    if not videos:
+        return None, "not measurable: no uploads cached"
     now = datetime.now(timezone.utc)
     count = 0
     for v in videos:
