@@ -24,9 +24,9 @@
           "description": { "type": "string" },
           "published_at": { "type": "string", "format": "date-time" },
           "duration_seconds": { "type": "integer" },
-          "views": { "type": "integer" },
-          "likes": { "type": "integer" },
-          "comments": { "type": "integer" },
+          "views": { "type": ["integer", "null"] },
+          "likes": { "type": ["integer", "null"] },
+          "comments": { "type": ["integer", "null"] },
           "url": { "type": "string" }
         }
       }
@@ -44,9 +44,22 @@
             "properties": {
               "query": { "type": "string" },
               "video_id": { "type": "string" },
-              "video_title": { "type": "string" }
+              "video_title": { "type": "string" },
+              "rank": { "type": "integer", "minimum": 1 }
             }
           }
+        }
+      }
+    },
+    "comment_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["comment_id", "video_id", "text"],
+        "properties": {
+          "comment_id": {"type": "string"},
+          "video_id": {"type": "string"},
+          "text": {"type": "string"}
         }
       }
     },

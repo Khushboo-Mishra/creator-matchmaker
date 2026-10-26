@@ -46,7 +46,7 @@ def engagement(videos):
     rates = [
         (v["likes"] + v["comments"]) / v["views"]
         for v in videos[:RATE_WINDOW]
-        if v.get("views")
+        if v.get("views") and v.get("likes") is not None and v.get("comments") is not None
     ]
     if not rates:
         return None, "not measurable: no uploads with view counts"
@@ -59,7 +59,7 @@ def engagement(videos):
 
 def momentum(videos):
     """Median views of the last 5 uploads over the median of the 10 before."""
-    if len(videos) < RATE_WINDOW:
+    if any(v.get("views") is None for v in videos[:RATE_WINDOW]) or len(videos) < RATE_WINDOW:
         return None, (
             f"not measurable: needs {RATE_WINDOW} uploads to compare, "
             f"found {len(videos)}"

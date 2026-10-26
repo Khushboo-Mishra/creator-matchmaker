@@ -1,6 +1,7 @@
 """Automatically discover YouTube creator candidates from campaign rules."""
 
 import json
+import math
 import time
 
 import requests
@@ -34,10 +35,10 @@ QUERY_SCHEMA = {
 }
 
 
-def generate_search_queries():
+def generate_search_queries(campaign=None):
     """Use Gemini to turn campaign rules into YouTube discovery queries."""
 
-    rules_text = RULES_FILE.read_text()
+    rules_text = json.dumps(campaign.canonical(), ensure_ascii=False) if campaign else RULES_FILE.read_text()
 
     prompt = f"""
 You are helping discover YouTube creators for a brand campaign.
@@ -146,7 +147,7 @@ def deduplicate_candidates(candidates):
             "video_id": candidate["matched_video_id"],
             "video_title": candidate["matched_video_title"],
             "rank": candidate["rank"],
-            "relevance_score": min(3.0, 1.0 / (1 + candidate["rank"])),
+            "relevance_score": 1.0 / math.log(candidate["rank"] + 1),
         }
 
         if channel_id not in unique:
@@ -156,7 +157,8 @@ def deduplicate_candidates(candidates):
                 "matches": [],
             }
 
-        unique[channel_id]["matches"].append(match)
+        if match not in unique[channel_id]["matches"]:
+            unique[channel_id]["matches"].append(match)
 
     # Screening uses the best result for each query, with an additive 40/60
     # split between discovery relevance and later creator screening.
@@ -164,14 +166,14 @@ def deduplicate_candidates(candidates):
         by_query = {}
         for match in candidate["matches"]:
             by_query[match["query"]] = max(by_query.get(match["query"], 0), match["relevance_score"])
-        candidate["discovery_relevance"] = round(sum(by_query.values()), 4)
+        candidate["discovery_relevance"] = sum(sorted(by_query.values(), reverse=True)[:4])
 
     return list(unique.values())
 
-def discover_candidates(max_results_per_query=10):
+def discover_candidates(max_results_per_query=10, campaign=None):
     """Run campaign-driven creator discovery across all generated queries."""
 
-    queries = generate_search_queries()
+    queries = list(dict.fromkeys(generate_search_queries(campaign)))
     all_candidates = []
 
     print(f"Generated {len(queries)} discovery queries.\n")
