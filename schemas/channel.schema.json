@@ -9,7 +9,7 @@
     "channel_id": { "type": "string" },
     "title": { "type": "string" },
     "description": { "type": "string" },
-    "subscribers": { "type": "integer" },
+    "subscribers": { "type": ["integer", "null"] },
     "uploads_playlist_id": { "type": "string" },
     "pulled_at": { "type": "string", "format": "date-time" },
     "videos": {

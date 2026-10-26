@@ -111,6 +111,7 @@ def marginal_components(c, priorities, selected):
 
 
 def relative_scores(candidates, weights):
+    candidates = [c for c in candidates if safety_gate(c) != "FAIL"]
     result = deepcopy(candidates)
     # Use exactly this frozen shortlist as the comparison cohort.
     for c in result:
