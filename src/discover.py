@@ -119,13 +119,14 @@ def extract_candidates(search_results, query):
 
     candidates = []
 
-    for item in search_results:
+    for rank, item in enumerate(search_results, 1):
         candidate = {
             "channel_id": item["snippet"]["channelId"],
             "channel_title": item["snippet"]["channelTitle"],
             "matched_query": query,
             "matched_video_id": item["id"]["videoId"],
             "matched_video_title": item["snippet"]["title"],
+            "rank": rank,
         }
 
         candidates.append(candidate)
@@ -144,6 +145,8 @@ def deduplicate_candidates(candidates):
             "query": candidate["matched_query"],
             "video_id": candidate["matched_video_id"],
             "video_title": candidate["matched_video_title"],
+            "rank": candidate["rank"],
+            "relevance_score": min(3.0, 1.0 / (1 + candidate["rank"])),
         }
 
         if channel_id not in unique:
@@ -154,6 +157,14 @@ def deduplicate_candidates(candidates):
             }
 
         unique[channel_id]["matches"].append(match)
+
+    # Screening uses the best result for each query, with an additive 40/60
+    # split between discovery relevance and later creator screening.
+    for candidate in unique.values():
+        by_query = {}
+        for match in candidate["matches"]:
+            by_query[match["query"]] = max(by_query.get(match["query"], 0), match["relevance_score"])
+        candidate["discovery_relevance"] = round(sum(by_query.values()), 4)
 
     return list(unique.values())
 
