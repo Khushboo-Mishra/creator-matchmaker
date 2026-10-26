@@ -28,6 +28,25 @@ Everything else in this repo follows from that.
 | `speed_to_activate` | How fast they can turn a video around | Arithmetic, uploads in the last 90 days |
 | `trend_fit` | Do they already cover what is rising | Model, with search grounding |
 
+## Locked matchmaker workflow
+
+`src.campaign` models the campaign as product description, objective, specific
+goal, audience, and four brand-requirement groups: banned phrases, raw tone,
+category exclusions, and competitors. It also provides independent,
+resettable, auditable six-dimension weights and four capability priorities.
+
+`src.ranking` applies creator health as 40% engagement, 40% momentum, and 20%
+activity; ranks a shortlist as roughly 15 top combined candidates plus 5
+specialists; renormalizes missing dimensions; and selects a four-creator roster
+using quality (0.50), capability coverage (0.35), and maximum similarity penalty
+(0.15). Manual swaps remain possible because roster selection accepts explicit
+candidate records.
+
+`src.snapshot` freezes campaign inputs, weights, candidates, and run/scoring
+versions. Data refresh is explicit. Gemini and YouTube remain optional external
+lanes: the repository does not claim those integrations are available without
+their configured keys and live services.
+
 Three of six are plain arithmetic on data the API returns directly. That is deliberate.
 When someone asks where a number came from, half the answers are a formula.
 
