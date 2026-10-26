@@ -1,129 +1,158 @@
 # Creator Matchmaker
 
-Build the creator mix that fits a campaign.
+Campaign input -> YouTube discovery -> measurable screening -> evidence evaluation ->
+relative six-dimension ranking -> four-creator roster -> marketer report and internal audit.
 
-Most tools rank creators one at a time. This one casts a roster: it picks the mix,
-gives each member a role, and says who to activate first.
+The backend entrypoint is `python -m src.matchmaker`. The older
+`src.pull` / `src.build_scores` scripts remain available for compatibility, but
+they are **not the locked campaign pipeline**.
 
-A campaign goes in. Every candidate channel is scored across six dimensions and the
-numbers are stored. Weights are then adjusted to say what matters for this campaign,
-and the ranking reorders instantly because nothing is recomputed. Once creators are
-picked, each is assigned a role and a creative direction built on what they already
-do well.
+## Install and run a complete demo
 
-## The one architectural decision
+From this repository folder with your virtual environment active:
 
-Score each channel once, on every dimension, and store the numbers. Weight sliders
-do arithmetic on values that already exist. No API call runs when a weight changes.
-Everything else in this repo follows from that.
-
-## The six dimensions
-
-| Dimension | Measures | Source |
-|---|---|---|
-| `audience_relevance` | Does this audience care about the category | Model, reading sampled comments |
-| `engagement` | Is the audience alive | Arithmetic, `(likes + comments) / views` |
-| `brand_fit` | Can the brand sit beside this content | Model, reading titles against the rules file |
-| `momentum` | Growing or fading | Arithmetic, median views last 5 vs previous 10 |
-| `speed_to_activate` | How fast they can turn a video around | Arithmetic, uploads in the last 90 days |
-| `trend_fit` | Do they already cover what is rising | Model, with search grounding |
-
-## Locked matchmaker workflow
-
-`src.campaign` models the campaign as product description, objective, specific
-goal, audience, and four brand-requirement groups: banned phrases, raw tone,
-category exclusions, and competitors. It also provides independent,
-resettable, auditable six-dimension weights and four capability priorities.
-
-`src.ranking` applies creator health as 40% engagement, 40% momentum, and 20%
-activity; ranks a shortlist as roughly 15 top combined candidates plus 5
-specialists; renormalizes missing dimensions; and selects a four-creator roster
-using quality (0.50), capability coverage (0.35), and maximum similarity penalty
-(0.15). Manual swaps remain possible because roster selection accepts explicit
-candidate records.
-
-`src.snapshot` freezes campaign inputs, weights, candidates, and run/scoring
-versions. Data refresh is explicit. Gemini and YouTube remain optional external
-lanes: the repository does not claim those integrations are available without
-their configured keys and live services.
-
-Three of six are plain arithmetic on data the API returns directly. That is deliberate.
-When someone asks where a number came from, half the answers are a formula.
-
-## Layout
-
-```
-config/rules.md              campaign rules. Five fixed headings, read by the scorer
-data/handles.txt             one YouTube handle per line
-data/channels/<handle>.json  pulled channel data        (gitignored, regenerate)
-data/scores/<handle>.json    six scores plus reasons    (gitignored, regenerate)
-schemas/                     the JSON contracts both of the above must satisfy
-src/pull.py                  YouTube Data API -> data/channels/
-src/arithmetic.py            the three scores that need no model
-src/score_ai.py              the three that do
-src/build_scores.py          merges both into data/scores/
+```powershell
+python -m pip install -r requirements.txt
+python -m src.matchmaker run --campaign examples/campaign.json --mode demo
 ```
 
-## Setup
+This runs the entire backend with **clearly labeled synthetic creators and model
+responses**. It requires no API keys. Expected result: 26 discovered, 25 measurable,
+20 shortlisted, and 4 recommended creators. Change the campaign JSON to try another
+objective or audience; synthetic judgments remain test fixtures, not real matching.
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # then fill in the two keys
+The command prints the saved run folder under `data/runs/<run-id>/`:
+
+- `report.pdf`: plain-language marketer brief with roster, evidence, comparisons,
+  alternatives, warnings, and method limitations.
+- `report.md`: the same report in text form.
+- `audit.json`: complete campaign, data, scores, evidence, counts, screening
+  decisions, settings, similarity components, selection terms and versions.
+
+Use `--no-pdf` if you only need JSON/Markdown and have not installed ReportLab.
+Generated runs and secrets are gitignored.
+
+## Run with live services
+
+Copy `.env.example` to `.env` and configure YouTube and Gemini keys, then:
+
+```powershell
+python -m src.matchmaker run --campaign examples/campaign.json --mode live
 ```
 
-`YOUTUBE_API_KEY`: create a project in the Cloud Console, enable YouTube Data API v3,
-generate an API key. Free.
+Live mode calls the existing YouTube discovery/data endpoints and Gemini
+generation/embedding adapters. Network/API failures stop the run; they never
+silently substitute synthetic scores. Live access, model availability, permissions
+and quota must be validated in your own configured environment. The repository
+tests mock external services and do not establish live service success.
 
-`GEMINI_API_KEY`: from aistudio.google.com. Free tier is enough to develop against.
+Campaign fields: product description, objective, specific goal, audience, and
+banned phrases/raw tone/category exclusions/competitors. No mandatory trend or
+message field. Supported objectives: awareness, consideration, conversion, launch,
+trend response. Objective presets are transparent starting values, not calibrated
+claims of optimal campaign performance.
 
-## Run
+## Google Trends verification
 
-```bash
-python -m src.pull                      # pull every handle in data/handles.txt
-python -m src.pull @somebody            # or just one
-python -m src.refresh_trends             # explicitly refresh one campaign trend snapshot
-python -m src.build_scores --no-model   # arithmetic only, no Gemini key needed
-python -m src.build_scores              # all six dimensions
+Google Search grounding is not Google Trends confirmation. The new pipeline
+accepts official Google Trends interest-over-time CSV exports through an explicit
+import boundary; automatic Google Trends retrieval is **not implemented**.
+
+1. Propose topics using Gemini:
+   `python -m src.trends propose --campaign examples/campaign.json --output proposals.json`
+2. Download one English Google Trends CSV per proposed topic from Google Trends.
+3. Create a manifest with `campaign_fingerprint` copied from proposals and
+   `exports` entries containing `topic`, `file` (relative to manifest),
+   `source_url` (trends.google.com), `geo`, and `window`.
+4. Import: `python -m src.trends import --manifest exports.json --output trends.json`
+5. Run with `--trends trends.json`.
+
+The importer records original-series data and export hashes, compares recent-half
+and previous-half mean interest, and retains rising topics. Operator-supplied CSV
+origin is recorded, not cryptographically certified. Snapshot dates, geography and
+time windows remain visible. No snapshot -> null Trend Fit; a valid snapshot with
+no matching rising topics -> low/zero Trend Fit. No trend results are fabricated.
+
+## Change controls, reset, or swap without API calls
+
+Replace the example path with the audit path printed by your run.
+
+```powershell
+python -m src.matchmaker rescore --snapshot data/runs/RUN_ID/audit.json --weights examples/weights.json
+python -m src.matchmaker rescore --snapshot data/runs/RUN_ID/audit.json --priorities examples/priorities.json
+python -m src.matchmaker rescore --snapshot data/runs/RUN_ID/audit.json --reset
+python -m src.matchmaker rescore --snapshot data/runs/RUN_ID/audit.json --swap "@outgoing" "@incoming"
 ```
 
-`src.refresh_trends` uses Gemini with Google Search once and writes
-`data/trend_snapshot.json`. The snapshot records the rules hash, model,
-timestamp, trend context and citations. Every creator is scored against that
-same snapshot until it is explicitly refreshed; changing `rules.md` or the
-configured Gemini model invalidates it automatically. Commit the snapshot when
-teammates or a demo must reproduce the exact same Trend Fit evidence.
+Each action creates a new versioned run folder; original files remain unchanged.
+Ranking weights and capability priorities are independent, adjustable and
+resettable. Priorities are continuous 0-1 values for Reach, Demonstration,
+Credibility, Speed; all-zero priorities are allowed. Invalid duplicates, unknown
+creators and safety FAIL candidates cannot be swapped in. Coverage/similarity
+issues warn rather than block.
 
-## Working agreements
+Explicit fresh collection:
 
-**The schemas are contracts.** `schemas/channel.schema.json` and
-`schemas/scores.schema.json` define the files that move between people. Do not rename
-a field without saying so. Anyone can work against a stub that satisfies the schema,
-which means nobody waits for anyone else's part to be finished.
+```powershell
+python -m src.matchmaker refresh-data --snapshot data/runs/RUN_ID/audit.json
+```
 
-**Data is never committed.** Pulled channels and generated scores are gitignored.
-They are reproducible, they go stale, and they make diffs unreadable. Commit one
-small sample only if the team needs a shared fixture.
+Supply `--trends` again for a verified trend snapshot. Refresh creates a new run
+linked to the old one. Re-scoring checks evidence hashes and code/prompt/scoring
+versions; a mismatch is reported instead of silently reproducing different logic.
 
-**Quota discipline.** `search.list` has its own small daily bucket and this repo does
-not use it. Channels are resolved by handle at 1 unit each. Never re-pull live during
-a demo, read the cached JSON.
+## Locked mechanics
 
-**Medians, not means.** One viral video should not rescue a dead channel.
+- Discovery deduplicates channels and preserves query/video/rank provenance.
+  Credit once per query at its best rank: `1 / log(rank + 1)`, best four queries.
+- Gates require a resolvable channel, at least eight usable uploads with statistics,
+  and activity within 180 days. Missing statistics remain missing.
+- Health is 40% Engagement / 40% Momentum / 20% Activity. Screening blends
+  normalized discovery 40% + health 60%, then takes 15 combined + up to 5
+  Engagement/Momentum/Activity specialists. Deep model calls happen afterward.
+- Audience uses sourced comments, embedding prefiltering, and Gemini quotes with
+  validated comment/video IDs. Sampled/usable/prefiltered/cited counts are recorded.
+- Safety is metadata-only PASS/REVIEW/FAIL with literal requirement checks and
+  Gemini contextual/paraphrase assessment. FAIL is excluded; REVIEW stays visible.
+- Brand Fit carries sourced evidence, mismatch direction and consistency.
+- Final six dimensions are normalized relative to the frozen shortlist. Missing
+  evidence is null and weights renormalize; observed weak evidence is a low score.
+- Greedy roster value is 0.50 quality + 0.35 incremental coverage - 0.15 maximum
+  similarity. All terms use 0-1 scales. Reach uses median views; Demonstration uses
+  test/comparison/how-to view performance relative to other formats; Credibility
+  uses comment depth/stated expertise; Speed uses upload frequency.
+- Content and comment-language embeddings are mean-pooled separately. Both cosine
+  similarities are stored; the pair penalty averages available signals and takes
+  the maximum pair against the selected team. This is not shared-viewer measurement.
+- Data snapshot, settings, and code/prompt/scoring versions define reproducibility.
 
-**Fixed anchors, not pool-relative normalisation.** Normalising across the candidate
-set means adding one channel silently changes everyone else's score.
+Implementation conventions: min-max normalization maps ties to 0.5; the screening
+momentum comparison uses the latest five versus up to ten preceding usable uploads
+(three preceding at the eight-upload gate). These counts are recorded. Empty
+format comparisons contribute no demonstrated coverage. Metadata sufficiency
+requires 120 characters. These conventions are explicit, not empirical guarantees.
 
-## Known limits
+The two open calibrations are exposed as `--min-comments` (default 10) and
+`--reach-exponent` (default 1). Tune them against real evidence, retaining the run
+configuration.
 
-- **No audience demographics.** Age, gender and location are only available to a
-  channel's own owner. `audience_relevance` is inferred from comment content, which
-  is a proxy, not a measurement.
-- **Roles come from title patterns**, not from watching every video. A reasonable
-  proxy, not ground truth.
-- **Trend fit decays.** A ranking is accurate on the day it runs.
-- **Scores are not comparable across campaigns**, because the weights and the rules
-  file change.
-- **No accuracy claim.** There is no ground truth on which past creator selections
-  succeeded. The claim is faster and reproducible, with a written reason attached to
-  every choice. Not better picks.
+## Validation
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+python -m flake8 src tests --select E9,F63,F7,F82
+python -m src.matchmaker validate --snapshot data/runs/RUN_ID/audit.json
+python -m src.matchmaker validate --snapshot data/runs/RUN_ID/audit.json --repeat-model --output stability.json
+python -m src.matchmaker validate --snapshot data/runs/RUN_ID/audit.json --human-ranking blind-ranking.txt
+```
+
+Validation includes deterministic replay, all six weights independently +/-10%,
+ranking correlations and roster changes. `--repeat-model` evaluates identical
+frozen evidence three times (live mode incurs Gemini calls) and reports correlations
+and maximum individual rank swing. It does not repull data. Human agreement is
+unmeasured until a blind ranking is provided. None of these tests claims predictive
+campaign accuracy.
+
+No UI is required. This branch is a backend application; `docs/index.html` is the
+existing project page, not a connected campaign interface.

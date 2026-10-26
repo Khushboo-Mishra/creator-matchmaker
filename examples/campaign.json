@@ -1,0 +1,12 @@
+{
+  "product_description": "Milanote is a visual workspace for organizing creative projects.",
+  "objective": "consideration",
+  "specific_goal": "Show filmmakers and designers how visual planning fits their client projects.",
+  "audience": "Filmmakers and designers who plan creative projects and organize client research.",
+  "brand_requirements": {
+    "banned_phrases": ["guaranteed success"],
+    "raw_tone": "Practical, calm, honest and clear",
+    "category_exclusions": ["gambling"],
+    "competitors": ["Notion"]
+  }
+}
