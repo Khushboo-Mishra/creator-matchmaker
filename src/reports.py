@@ -133,6 +133,7 @@ def write_reports(run, directory, pdf=True):
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
     styles = getSampleStyleSheet()
+    styles["Heading3"].keepWithNext = True
     styles["BodyText"].alignment = TA_LEFT
     styles["BodyText"].leading = 13
     flow = []
