@@ -3,6 +3,13 @@
 Do not share .env or API keys. These steps make paid/quota-consuming calls only
 where noted. There is no automatic resume after a failed live run.
 
+Model-output validation failures now identify the creator and field. Failed
+live evaluations save private evidence and model output under data/diagnostics/
+(Git-ignored). These files may contain comment text; do not publish them.
+They are diagnostic records, not completed audit snapshots or resume checkpoints.
+Scores are never silently clamped or converted. Structured output constraints
+reduce malformed responses but do not replace local evidence validation.
+
 ## 1. Prepare
 
 Activate your existing virtual environment, then:

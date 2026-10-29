@@ -84,6 +84,25 @@ def valid_trends(snapshot, at, allow_synthetic=False):
 
 
 def evaluate(channel, campaign, provider, trend_snapshot, min_comments=10):
+    provider.last_judgment = None
+    provider.last_response_text = None
+    try:
+        return _evaluate(channel, campaign, provider, trend_snapshot, min_comments)
+    except (ValueError, KeyError, TypeError) as exc:
+        identity = channel.get("handle") or channel.get("channel_id", "unknown creator")
+        message = f"Creator {identity}: {exc}"
+        if provider.mode == "live":
+            from .failure_diagnostics import save_failure
+
+            try:
+                path = save_failure(channel, campaign, provider, trend_snapshot, exc)
+                message += f". Private diagnostics saved: {path}"
+            except OSError as write_error:
+                message += f". Diagnostics could not be saved: {write_error}"
+        raise ValueError(message) from exc
+
+
+def _evaluate(channel, campaign, provider, trend_snapshot, min_comments=10):
     """Only sourced comments count; legacy text-only comments cannot be cited."""
     videos = {v["video_id"]: v for v in channel["videos"][:15]}
     metadata = [
@@ -117,6 +136,10 @@ def evaluate(channel, campaign, provider, trend_snapshot, min_comments=10):
         else []
     )
     result = provider.judge(campaign, metadata, selected, trend_snapshot)
+    from .judgment_contract import validate_judgment
+
+    provider.last_judgment = result
+    validate_judgment(result)
     counts = {
         "sampled": len(channel.get("comment_records", [])),
         "usable": len(comments),

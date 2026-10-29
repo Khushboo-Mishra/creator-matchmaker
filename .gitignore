@@ -17,6 +17,7 @@ venv/
 .pytest_cache/
 .local-deps/
 data/runs/
+data/diagnostics/
 
 # node
 node_modules/

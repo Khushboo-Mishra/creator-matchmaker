@@ -26,7 +26,7 @@ from .screening import screen, relative
 from .rank_correlation import spearman_rho
 
 SCORING_VERSION = "locked-3"
-PROMPT_VERSION = "metadata-evidence-1"
+PROMPT_VERSION = "metadata-evidence-2"
 
 
 def fingerprint(value):

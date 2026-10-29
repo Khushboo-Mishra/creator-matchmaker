@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import discover, pull, score_ai
 from .config import GEMINI_API_KEY, YOUTUBE_API_KEY, GEMINI_MODEL
+from .judgment_contract import JUDGMENT_SCHEMA
 
 
 class LiveProvider:
@@ -78,6 +79,7 @@ class LiveProvider:
         return score_ai.embed_text(text)
 
     def judge(self, campaign, metadata, comments, trends):
+        self.last_response_text = None
         # JSON content is untrusted data, not executable instructions.
         contract = {
             "audience": {
@@ -156,15 +158,32 @@ class LiveProvider:
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
                     "responseMimeType": "application/json",
+                    "responseJsonSchema": JUDGMENT_SCHEMA,
                     "temperature": 0,
                 },
             },
             timeout=90,
         )
         response.raise_for_status()
-        return json.loads(
-            response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        payload = response.json()
+        candidates = payload.get("candidates", [])
+        if not candidates:
+            self.last_response_text = json.dumps(payload)
+            raise ValueError("judgment response: no candidate returned")
+        candidate = candidates[0]
+        self.last_response_text = "".join(
+            p["text"]
+            for p in candidate.get("content", {}).get("parts", [])
+            if isinstance(p.get("text"), str) and not p.get("thought")
         )
+        if candidate.get("finishReason", "STOP") != "STOP":
+            raise ValueError(
+                f"judgment response: finishReason={candidate.get('finishReason')}"
+            )
+        try:
+            return json.loads(self.last_response_text)
+        except json.JSONDecodeError as exc:
+            raise ValueError("judgment response: invalid or empty JSON") from exc
 
 
 # Six deliberately different synthetic profiles exercise complementarity.
