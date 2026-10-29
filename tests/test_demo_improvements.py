@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.export_web import web_payload, js_json
+from scripts.export_web import web_payload, js_json, export
 from src.campaign import Campaign, CAPABILITIES
 from src.matchmaker import load_trends
 from src.pipeline import run
@@ -74,3 +74,32 @@ def test_report_headings_and_grouped_quotes(demo, tmp_path):
     assert "### Brand Fit" in report
     assert report.count("### Supporting evidence") <= 4
     assert "\n- " in report
+    assert "not directly comparable" in report
+    assert "## How the team is chosen" in report
+
+
+def test_live_mode_warning_and_file_export_with_mocked_provider(tmp_path):
+    # Exercise live-mode plumbing, not real APIs or verified external measurements.
+    class MockLiveProvider(DemoProvider):
+        mode = "live"
+
+    campaign = Campaign(**json.loads(Path("examples/campaign.json").read_text()))
+    at = datetime(2026, 10, 26, tzinfo=timezone.utc)
+    trends = {
+        "source": "Google Trends",
+        "fetched_at": at.isoformat(),
+        "campaign_fingerprint": campaign.fingerprint(),
+        "trends": [],
+    }
+    result = run(campaign, MockLiveProvider(at), at, trend_snapshot=trends)
+    assert result["mode"] == "live"
+    assert not any("synthetic" in w.lower() for w in result["warnings"])
+    assert all(c["dimensions"]["trend_fit"]["score"] is not None for c in result["roster"])
+    audit = tmp_path / "audit.json"
+    audit.write_text(json.dumps(result), encoding="utf-8")
+    output = tmp_path / "data.js"
+    export(audit, output)
+    metadata = json.loads(output.read_text(encoding="utf-8").split("const RUN = ")[1].rstrip(";\n"))
+    assert metadata["mode"] == "live"
+    assert metadata["warnings"] == result["warnings"]
+    assert [c["handle"] for c in metadata["roster"]] == [c["handle"] for c in result["roster"]]

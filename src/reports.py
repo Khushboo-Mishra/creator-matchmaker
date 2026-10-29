@@ -114,6 +114,12 @@ def report_sections(run):
         )
     sections.append(
         (
+            "How the team is chosen",
+            "The first automatic pick uses individual quality alone; picks two to four balance quality, added capability coverage and similarity, so their selection totals are not directly comparable with the first pick's total. Manual swaps reflect the marketer's choice.",
+        )
+    )
+    sections.append(
+        (
             "Method and limitations",
             "Creators were screened for recent measurable activity, then evaluated on six campaign dimensions. Team selection balances suitability, capability coverage and similarity. Missing evidence is excluded from scoring. Rankings are relative to this shortlist, not comparable across campaigns. Comments are an audience-interest proxy, not demographics. Safety and capability judgments use metadata, not watched videos. Similarity is a content/comment-language proxy, not measured audience overlap. Availability, rates and campaign outcomes are not verified.",
         )
@@ -131,6 +137,7 @@ def heading_levels(sections):
             "Next-best alternative",
             "Warnings to review",
             "Method and limitations",
+            "How the team is chosen",
         ):
             in_creator = False
             level = 2
