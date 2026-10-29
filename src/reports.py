@@ -32,19 +32,21 @@ def report_sections(run):
                 f"Suggested role: {role.capitalize()}.",
             )
         )
+        quotes = []
         for d in ("audience_relevance", "brand_fit", "trend_fit"):
             evidence = creator["raw_dimensions"][d]
             sections.append((d.replace("_", " ").title(), evidence["reason"]))
             for item in evidence["evidence"][:2]:
                 if "quote" in item:
-                    sections.append(
-                        (
-                            "Supporting evidence",
-                            item["quote"]
-                            + " | "
-                            + item.get("url", "Video: " + item.get("video_id", "")),
-                        )
+                    quote = (
+                        item["quote"]
+                        + " | "
+                        + item.get("url", "Video: " + item.get("video_id", ""))
                     )
+                    if quote not in quotes:
+                        quotes.append(quote)
+        if quotes:
+            sections.append(("Supporting evidence", quotes))
         components = creator["marginal_components"]
         sections.append(
             (
@@ -119,11 +121,40 @@ def report_sections(run):
     return sections
 
 
+def heading_levels(sections):
+    in_creator = False
+    for title, text in sections:
+        if title.split(".")[0].isdigit():
+            in_creator = True
+            level = 2
+        elif title in (
+            "Next-best alternative",
+            "Warnings to review",
+            "Method and limitations",
+        ):
+            in_creator = False
+            level = 2
+        else:
+            level = 1 if title == "Creator Matchmaker" else (3 if in_creator else 2)
+        yield level, title, text
+
+
 def write_reports(run, directory, pdf=True):
     directory = Path(directory)
     sections = report_sections(run)
     (directory / "report.md").write_text(
-        "\n\n".join(f"## {title}\n\n{text}" for title, text in sections),
+        "\n\n".join(
+            "#" * level
+            + " "
+            + title
+            + "\n\n"
+            + (
+                "\n".join("- " + item for item in text)
+                if isinstance(text, list)
+                else text
+            )
+            for level, title, text in heading_levels(sections)
+        ),
         encoding="utf-8",
     )
     if not pdf:
@@ -137,18 +168,21 @@ def write_reports(run, directory, pdf=True):
     styles["BodyText"].alignment = TA_LEFT
     styles["BodyText"].leading = 13
     flow = []
-    for title, text in sections:
+    for level, title, text in heading_levels(sections):
         flow.extend(
             [
                 Paragraph(
                     escape(title),
-                    (
-                        styles["Heading1"]
-                        if title == "Creator Matchmaker"
-                        else styles["Heading3"]
-                    ),
+                    styles[f"Heading{level}"],
                 ),
-                Paragraph(escape(text), styles["BodyText"]),
+                *[
+                    Paragraph(
+                        escape(item),
+                        styles["BodyText"],
+                        bulletText="•" if isinstance(text, list) else None,
+                    )
+                    for item in (text if isinstance(text, list) else [text])
+                ],
                 Spacer(1, 4),
             ]
         )
