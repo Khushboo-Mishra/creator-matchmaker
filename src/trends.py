@@ -62,7 +62,14 @@ def propose(campaign):
     }
 
 
-def import_exports(manifest, base):
+def import_exports(manifest, base, before=None):
+    if before is not None:
+        try:
+            cutoff = datetime.strptime(before, "%Y-%m-%d").date()
+            if cutoff.isoformat() != before:
+                raise ValueError()
+        except (ValueError, TypeError) as exc:
+            raise ValueError("--before must be a date in YYYY-MM-DD format") from exc
     records, rising = [], []
     for item in manifest["exports"]:
         if urlparse(item["source_url"]).hostname != "trends.google.com":
@@ -98,6 +105,21 @@ def import_exports(manifest, base):
             raise ValueError(
                 "At least four unique ordered Google Trends periods required"
             )
+        excluded = []
+        if before is not None:
+            excluded = [
+                x["date"]
+                for x in series
+                if datetime.fromisoformat(
+                    x["date"] + "-01" if len(x["date"]) == 7 else x["date"]
+                ).date()
+                >= cutoff
+            ]
+            series = [x for x in series if x["date"] not in excluded]
+        if len(series) < 4:
+            raise ValueError(
+                "At least four retained periods required after --before cutoff"
+            )
         split = len(series) // 2
         previous = mean(x["value"] for x in series[:split])
         recent = mean(x["value"] for x in series[split:])
@@ -108,6 +130,11 @@ def import_exports(manifest, base):
             "source_url": item["source_url"],
             "export_sha256": hashlib.sha256(content).hexdigest(),
             "series": series,
+            "excluded_dates": excluded,
+            "retained_period_start_range": {
+                "first": series[0]["date"],
+                "last": series[-1]["date"],
+            },
             "previous_interest": previous,
             "recent_interest": recent,
         }
@@ -121,12 +148,16 @@ def import_exports(manifest, base):
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean",
         "campaign_fingerprint": manifest["campaign_fingerprint"],
+        "filter": {
+            "before": before,
+            "rule": "Retain only periods whose start date is strictly before the cutoff; no automatic partial-period detection",
+        },
         "checked_topics": records,
         "trends": rising,
     }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("propose")
@@ -135,7 +166,10 @@ def main():
     p = sub.add_parser("import")
     p.add_argument("--manifest", required=True)
     p.add_argument("--output", required=True)
-    args = parser.parse_args()
+    p.add_argument(
+        "--before", help="YYYY-MM-DD: exclude periods starting on or after this date"
+    )
+    args = parser.parse_args(argv)
     if args.command == "propose":
         result = propose(
             Campaign(**json.loads(Path(args.campaign).read_text(encoding="utf-8")))
@@ -143,7 +177,9 @@ def main():
     else:
         path = Path(args.manifest)
         result = import_exports(
-            json.loads(path.read_text(encoding="utf-8")), path.parent
+            json.loads(path.read_text(encoding="utf-8")),
+            path.parent,
+            before=args.before,
         )
     with Path(args.output).open("x", encoding="utf-8") as output:
         json.dump(result, output, indent=2, ensure_ascii=False)
