@@ -15,6 +15,18 @@ def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def load_trends(campaign, mode, path=None):
+    if path:
+        return read(path)
+    if mode in {"demo", "synthetic-demo"}:
+        fixture = read(
+            Path(__file__).resolve().parent.parent / "examples" / "trend_snapshot.json"
+        )
+        if fixture["campaign_fingerprint"] == campaign.fingerprint():
+            return fixture
+    return None
+
+
 def parser():
     p = argparse.ArgumentParser(
         description="Campaign input -> screening -> evidence -> roster -> report"
@@ -108,7 +120,7 @@ def main(argv=None):
             campaign,
             provider,
             at,
-            read(args.trends) if args.trends else None,
+            load_trends(campaign, mode, args.trends),
             args.min_comments,
             args.reach_exponent,
         )

@@ -60,7 +60,7 @@ def test_low_audience_is_not_null_with_sufficient_evidence():
 
 def test_literal_requirement_flag_remains_review():
     c = campaign()
-    c.brand_requirements["banned_phrases"] = ["storyboarding"]
+    c.brand_requirements["banned_phrases"] = ["moodboarding"]
     p = DemoProvider(AT)
     ch = p.channel(p.discover(c)["candidates"][1])
     ch["comment_records"] = p.comments(ch)

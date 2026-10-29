@@ -25,7 +25,7 @@ from .ranking import (
 from .screening import screen, relative
 from .rank_correlation import spearman_rho
 
-SCORING_VERSION = "locked-2"
+SCORING_VERSION = "locked-3"
 PROMPT_VERSION = "metadata-evidence-1"
 
 
@@ -63,7 +63,7 @@ def run(
         raise ValueError("min_comments must be a positive integer")
     if not 0 < reach_exponent <= 5:
         raise ValueError("reach_exponent must be between 0 and 5")
-    valid_trends(trend_snapshot, at)
+    valid_trends(trend_snapshot, at, allow_synthetic=provider.mode == "synthetic-demo")
     if (
         trend_snapshot is not None
         and trend_snapshot.get("campaign_fingerprint") != campaign.fingerprint()
@@ -205,6 +205,10 @@ def summarize(result):
     if result["trend_snapshot"] is None:
         result["warnings"].append(
             "Google Trends snapshot unavailable: Trend Fit is unmeasured."
+        )
+    elif result["trend_snapshot"].get("synthetic"):
+        result["warnings"].append(
+            "Trend values are synthetic fixtures, not verified Google Trends measurements."
         )
     if len(result["roster"]) < 4:
         result["warnings"].append(

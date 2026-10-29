@@ -5,22 +5,6 @@ from copy import deepcopy
 from .screening import relative
 
 
-def creator_health(channel):
-    """Locked health mix: engagement 40%, momentum 40%, activity 20%."""
-    scores = channel.get("dimensions", channel)
-    values = [
-        (
-            scores.get(k, {}).get("score")
-            if isinstance(scores.get(k), dict)
-            else scores.get(k)
-        )
-        for k in ("engagement", "momentum", "speed_to_activate")
-    ]
-    if any(v is None for v in values):
-        return None
-    return round(values[0] * 0.4 + values[1] * 0.4 + values[2] * 0.2, 4)
-
-
 def weighted_score(channel, weights):
     validate_controls(weights, {k: 1 for k in CAPABILITIES})
     dims = channel.get("dimensions", channel)
@@ -40,28 +24,6 @@ def weighted_score(channel, weights):
 def safety_gate(channel):
     status = channel.get("brand_safety", channel.get("safety", "REVIEW"))
     return status if status in {"PASS", "REVIEW", "FAIL"} else "REVIEW"
-
-
-def shortlist(channels, weights, top_n=15, specialist_n=5):
-    eligible = [
-        c
-        for c in channels
-        if safety_gate(c) != "FAIL" and creator_health(c) is not None
-    ]
-    ranked = sorted(
-        eligible, key=lambda c: weighted_score(c, weights) or -1, reverse=True
-    )
-    top = ranked[:top_n]
-    chosen = {c.get("handle") for c in top}
-    specialists = sorted(
-        (c for c in eligible if c.get("handle") not in chosen),
-        key=lambda c: max(
-            (c.get("dimensions", {}).get(d, {}).get("score") or 0)
-            for d in ("engagement", "momentum", "speed_to_activate")
-        ),
-        reverse=True,
-    )[:specialist_n]
-    return top + specialists
 
 
 def select_roster(candidates, priorities, size=4):
@@ -92,13 +54,28 @@ def capability(c, key):
 
 def marginal_components(c, priorities, selected):
     quality = c["combined_score"] / 10
-    gain = sum(
-        priorities[k]
-        * max(
-            0, capability(c, k) - max((capability(o, k) for o in selected), default=0)
+    if not selected:
+        return {
+            "quality": quality,
+            "coverage_gain": 0.0,
+            "max_similarity": 0.0,
+            "total": quality,
+            "selection_rule": "quality_anchor",
+        }
+    priority_total = sum(priorities.values())
+    gain = (
+        sum(
+            priorities[k]
+            * max(
+                0,
+                capability(c, k) - max((capability(o, k) for o in selected), default=0),
+            )
+            for k in CAPABILITIES
         )
-        for k in CAPABILITIES
-    ) / len(CAPABILITIES)
+        / priority_total
+        if priority_total
+        else 0.0
+    )
     similarity = max(
         (c.get("similarity", {}).get(o["handle"], 0) for o in selected), default=0
     )
@@ -107,6 +84,7 @@ def marginal_components(c, priorities, selected):
         "coverage_gain": gain,
         "max_similarity": similarity,
         "total": 0.50 * quality + 0.35 * gain - 0.15 * similarity,
+        "selection_rule": "marginal_teammate",
     }
 
 

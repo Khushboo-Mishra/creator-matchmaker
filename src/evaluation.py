@@ -48,7 +48,7 @@ def dimension(score, reason, evidence=None, **extra):
     return {"score": score, "reason": reason, "evidence": evidence or [], **extra}
 
 
-def valid_trends(snapshot, at):
+def valid_trends(snapshot, at, allow_synthetic=False):
     if snapshot is None:
         return None
     stamp = datetime.fromisoformat(snapshot["fetched_at"].replace("Z", "+00:00"))
@@ -56,7 +56,14 @@ def valid_trends(snapshot, at):
         raise ValueError(
             "Trend snapshot must have a nonfuture timezone-aware timestamp"
         )
-    if snapshot.get("source") != "Google Trends":
+    synthetic = snapshot.get("synthetic", False)
+    if synthetic and not allow_synthetic:
+        raise ValueError("Synthetic trend fixtures are prohibited in live mode")
+    if snapshot.get("source") != "Google Trends" and not (
+        synthetic
+        and allow_synthetic
+        and snapshot.get("source") == "Synthetic demo fixture"
+    ):
         raise ValueError(
             "Trend confirmation requires Google Trends, not Search citations"
         )
@@ -226,7 +233,11 @@ def evaluate(channel, campaign, provider, trend_snapshot, min_comments=10):
         trend = dimension(
             max(values, default=0),
             (
-                "Verified trend alignment"
+                (
+                    "Synthetic fixture trend alignment"
+                    if trend_snapshot.get("synthetic")
+                    else "Verified trend alignment"
+                )
                 if values
                 else "No match to verified rising topics"
             ),

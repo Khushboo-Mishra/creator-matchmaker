@@ -14,16 +14,6 @@ def additive_screen(discovery_relevance, screening_score):
     )
 
 
-def passes_gates(candidate, min_health=4.0, safety="PASS"):
-    health = candidate.get("creator_health")
-    return (
-        health is not None
-        and health >= min_health
-        and candidate.get("brand_safety", "REVIEW") == safety
-        and not candidate.get("hard_stop", False)
-    )
-
-
 def usable_videos(channel, at):
     videos = []
     for video in channel.get("videos", []):

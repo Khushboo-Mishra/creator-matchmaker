@@ -167,11 +167,95 @@ class LiveProvider:
         )
 
 
+# Six deliberately different synthetic profiles exercise complementarity.
+DEMO_ARCHETYPES = (
+    {
+        "name": "Film Studio",
+        "words": ("film", "storyboarding", "cinema", "camera", "shot"),
+        "description": "Film directors explain storyboarding, cinema camera movement and shot composition.",
+        "comment": "These cinema shot boards help my film.",
+        "views": 120000,
+        "cadence": 12,
+        "lift": 1.15,
+        "expertise": 0.25,
+        "audience": 0.82,
+        "fit": 0.78,
+        "trend": "storyboarding",
+    },
+    {
+        "name": "Design Lab",
+        "words": ("design", "moodboarding", "branding", "palette", "layout"),
+        "description": "Design demonstrations compare moodboarding, branding palettes and layout methods.",
+        "comment": "This branding palette makes my design moodboarding clearer.",
+        "views": 24000,
+        "cadence": 8,
+        "lift": 2.8,
+        "expertise": 0.4,
+        "audience": 0.88,
+        "fit": 0.9,
+        "trend": "moodboarding",
+    },
+    {
+        "name": "Photo Mentor",
+        "words": ("photography", "lighting", "portrait", "exposure", "lens"),
+        "description": "A photography teacher explains portrait lighting, lens choices and exposure decisions.",
+        "comment": "As a portrait photography student I tested your lighting approach with two different lens settings. The exposure comparison explained why my earlier photographs lacked detail and helped me improve my portfolio.",
+        "views": 18000,
+        "cadence": 11,
+        "lift": 1.05,
+        "expertise": 0.95,
+        "audience": 0.76,
+        "fit": 0.8,
+        "trend": None,
+    },
+    {
+        "name": "Workflow Sprint",
+        "words": ("productivity", "workflow", "checklist", "schedule", "automation"),
+        "description": "Fast productivity updates demonstrate workflow checklists, schedule habits and automation.",
+        "comment": "Useful workflow checklist for my schedule.",
+        "views": 9000,
+        "cadence": 2,
+        "lift": 1.2,
+        "expertise": 0.2,
+        "audience": 0.72,
+        "fit": 0.7,
+        "trend": "creative planning",
+    },
+    {
+        "name": "Illustration Bench",
+        "words": ("illustration", "sketching", "drawing", "character", "brush"),
+        "description": "Illustration tests compare sketching tools, character drawing and brush techniques.",
+        "comment": "My character drawing improved using these sketching brush tests.",
+        "views": 14000,
+        "cadence": 7,
+        "lift": 2.1,
+        "expertise": 0.55,
+        "audience": 0.8,
+        "fit": 0.84,
+        "trend": "moodboarding",
+    },
+    {
+        "name": "Story Workshop",
+        "words": ("writing", "narrative", "novel", "plot", "manuscript"),
+        "description": "An experienced writing tutor reviews narrative structure, novel plots and manuscript revisions.",
+        "comment": "While revising my novel manuscript I used your narrative exercise to compare two plot structures. It helped explain the pacing problem in my writing and gave me a practical revision process.",
+        "views": 11000,
+        "cadence": 14,
+        "lift": 1.1,
+        "expertise": 0.85,
+        "audience": 0.78,
+        "fit": 0.82,
+        "trend": "creative planning",
+    },
+)
+DEMO_VARIANTS = ("independent", "commercial", "experimental", "beginner", "advanced")
+
+
 class DemoProvider:
-    """Synthetic data exercises the exact same pipeline. Never presented as live."""
+    """Synthetic profiles and judgments, never represented as live findings."""
 
     mode = "synthetic-demo"
-    model = "deterministic-fixture-v1"
+    model = "archetype-fixture-v2"
 
     def __init__(self, at):
         self.at = at
@@ -187,7 +271,7 @@ class DemoProvider:
             "candidates": [
                 {
                     "channel_id": f"demo-{i}",
-                    "channel_title": f"Demo Studio {i}",
+                    "channel_title": f"Demo {DEMO_ARCHETYPES[i % 6]['name']} {i}",
                     "matches": [
                         {
                             "query": q,
@@ -203,19 +287,26 @@ class DemoProvider:
 
     def channel(self, candidate):
         i = int(candidate["channel_id"].split("-")[1])
+        profile = DEMO_ARCHETYPES[i % 6]
+        variant = DEMO_VARIANTS[i // 6]
         videos = []
         for n in range(15 if i != 25 else 3):
-            views = int((1200 + i * 450) * (1 + i / 30 if n < 5 else 1))
+            views = int(
+                profile["views"]
+                * (1 + (i // 6) * 0.07)
+                * (profile["lift"] + (i // 6) * 0.03 if n < 5 else 1)
+            )
             videos.append(
                 {
                     "video_id": f"demo-{i}-{n}",
-                    "title": f"Creative planning tutorial {n}",
-                    "description": "A practical demonstration of storyboarding and visual planning for client projects.",
+                    "title": f"{variant.title()} {profile['words'][n % 5]} {'test' if n < 5 else 'journal'} {n}",
+                    "description": profile["description"]
+                    + f" A {variant} project example.",
                     "published_at": (
-                        self.at - timedelta(days=5 + n * (2 + i % 8))
+                        self.at - timedelta(days=5 + n * profile["cadence"])
                     ).isoformat(),
                     "views": views,
-                    "likes": int(views * (0.02 + i % 7 * 0.005)),
+                    "likes": int(views * (0.025 + (i % 5) * 0.004)),
                     "comments": 10 + i,
                 }
             )
@@ -223,8 +314,8 @@ class DemoProvider:
             "channel_id": candidate["channel_id"],
             "handle": f"@demo{i}",
             "title": candidate["channel_title"],
-            "subscribers": 10000 + i * 1000,
-            "description": "Synthetic creative workflow educator",
+            "subscribers": profile["views"] * 3,
+            "description": profile["description"],
             "videos": videos,
             "pulled_at": self.at.isoformat(),
             "discovery": {"matches": candidate["matches"]},
@@ -236,26 +327,40 @@ class DemoProvider:
             {
                 "comment_id": f"comment-{i}-{n}",
                 "video_id": channel["videos"][n % 3]["video_id"],
-                "text": f"I use visual planning for client projects; this tutorial helps with storyboarding. Example {n}.",
+                "text": DEMO_ARCHETYPES[i % 6]["comment"]
+                + f" {DEMO_VARIANTS[i // 6]} example {n}.",
             }
             for n in range(3 if i == 0 else 20)
         ]
 
     def embed(self, text):
-        # Fixed lexical vectors are a deterministic test double for Gemini embeddings.
-        words = ("planning", "tutorial", "client", "storyboarding", "visual")
-        return tuple(1 + text.casefold().count(w) for w in words)
+        # Sparse vocabulary vectors are an offline test double, not semantic AI.
+        import re
+
+        words = [w for p in DEMO_ARCHETYPES for w in p["words"]] + list(DEMO_VARIANTS)
+        tokens = re.findall(r"[a-z]+", text.casefold())
+        return tuple(tokens.count(w) for w in words) + (0.1,)
 
     def judge(self, campaign, metadata, comments, trends):
         i = int(metadata[0]["video_id"].split("-")[1])
+        profile = DEMO_ARCHETYPES[i % 6]
         evidence = [
-            {"video_id": m["video_id"], "quote": m["text"][: min(80, len(m["text"]))]}
-            for m in metadata[:2]
+            {"video_id": m["video_id"], "quote": m["text"][:80]} for m in metadata[:2]
         ]
+        matches = []
+        if trends and profile["trend"] in {t["topic"] for t in trends["trends"]}:
+            matches = [
+                {
+                    "topic": profile["trend"],
+                    "campaign_relevance": 0.85,
+                    "creator_proximity": 0.55 + (i % 5) * 0.08,
+                    "video_ids": [metadata[0]["video_id"]],
+                }
+            ]
         return {
             "audience": {
-                "score": 0.4 + (i % 6) / 10,
-                "reason": "Synthetic commenters discuss project planning.",
+                "score": min(1, profile["audience"] + (i // 6) * 0.01),
+                "reason": f"Synthetic comments discuss {profile['words'][0]} projects.",
                 "quotes": [
                     {
                         "comment_id": c["comment_id"],
@@ -266,10 +371,10 @@ class DemoProvider:
                 ],
             },
             "brand_fit": {
-                "score": 0.4 + (i % 5) / 10,
-                "reason": "Synthetic tutorials demonstrate visual workflows.",
-                "mismatch_direction": "None in synthetic metadata",
-                "consistency": "Repeated tutorial format",
+                "score": min(1, profile["fit"] + (i // 6) * 0.01),
+                "reason": f"Synthetic {profile['words'][0]} examples illustrate a possible product setting.",
+                "mismatch_direction": "Fixture only; no real endorsement",
+                "consistency": "Repeated archetype vocabulary",
                 "evidence": evidence,
             },
             "safety": {
@@ -278,9 +383,9 @@ class DemoProvider:
                 "evidence": evidence if i in (3, 7) else [],
             },
             "capabilities": {
-                "expertise": 0.4 + (i % 5) / 10,
+                "expertise": profile["expertise"],
                 "demonstration_video_ids": [m["video_id"] for m in metadata[:5]],
                 "evidence": evidence,
             },
-            "trend_matches": [],
+            "trend_matches": matches,
         }

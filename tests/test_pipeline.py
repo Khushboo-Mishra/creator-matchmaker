@@ -131,9 +131,9 @@ def test_roster_terms_use_common_scale_and_continuous_priorities():
         "similarity": {"b": 0.8},
     }
     p = dict.fromkeys(CAPABILITIES, 1)
-    assert marginal_components(c, p, [])["total"] == pytest.approx(0.85)
+    assert marginal_components(c, p, [])["total"] == 1
     half = dict.fromkeys(CAPABILITIES, 0.5)
-    assert marginal_components(c, half, [])["coverage_gain"] == 0.5
+    assert marginal_components(c, half, [])["coverage_gain"] == 0
     other = dict(c, handle="b")
     assert marginal_components(c, p, [other])["total"] == pytest.approx(
         0.5 - 0.15 * 0.8
