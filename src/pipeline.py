@@ -51,6 +51,7 @@ def run(
     trend_snapshot=None,
     min_comments=10,
     reach_exponent=1.0,
+    discovery_snapshot=None,
 ):
     at = at or datetime.now(timezone.utc)
     if at.tzinfo is None:
@@ -69,7 +70,12 @@ def run(
         and trend_snapshot.get("campaign_fingerprint") != campaign.fingerprint()
     ):
         raise ValueError("Trend snapshot belongs to a different campaign")
-    discovery = provider.discover(campaign)
+    if discovery_snapshot is not None:
+        from .discovery_file import validate_discovery
+
+        discovery = deepcopy(validate_discovery(discovery_snapshot, campaign))
+    else:
+        discovery = provider.discover(campaign)
     # Provider output is deduplicated by stable channel ID, preserving all matches.
     unique = {}
     for candidate in discovery["candidates"]:

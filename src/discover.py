@@ -3,6 +3,9 @@
 import json
 import math
 import time
+import argparse
+from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 
@@ -203,14 +206,28 @@ def discover_candidates(max_results_per_query=10, campaign=None):
         "candidates": unique_candidates,
     }
 
-if __name__ == "__main__":
-    discovery = discover_candidates(max_results_per_query=10)
+def main(argv=None):
+    from .campaign import Campaign
+    from .discovery_file import validate_discovery
 
-    DISCOVERED_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    DISCOVERED_FILE.write_text(
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--campaign", required=True)
+    parser.add_argument("--output", default=str(DISCOVERED_FILE))
+    args = parser.parse_args(argv)
+    campaign = Campaign(**json.loads(Path(args.campaign).read_text(encoding="utf-8")))
+    discovery = discover_candidates(max_results_per_query=10, campaign=campaign)
+    discovery["campaign_fingerprint"] = campaign.fingerprint()
+    discovery["discovered_at"] = datetime.now(timezone.utc).isoformat()
+    validate_discovery(discovery, campaign)
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
         json.dumps(discovery, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
-    print(f"\nSaved discovery results to {DISCOVERED_FILE}")
+    print(f"\nSaved discovery results to {output}")
+
+
+if __name__ == "__main__":
+    main()

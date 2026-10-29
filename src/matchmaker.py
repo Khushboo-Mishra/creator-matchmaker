@@ -37,6 +37,7 @@ def parser():
         if command == "run":
             s.add_argument("--campaign", required=True)
             s.add_argument("--mode", choices=["demo", "live"], required=True)
+            s.add_argument("--discovery", help="Saved campaign-matched discovery JSON; skips discovery API calls")
         else:
             s.add_argument("--snapshot", required=True)
         s.add_argument(
@@ -123,6 +124,7 @@ def main(argv=None):
             load_trends(campaign, mode, args.trends),
             args.min_comments,
             args.reach_exponent,
+            discovery_snapshot=read(args.discovery) if getattr(args, "discovery", None) else None,
         )
         if previous:
             snapshot["refresh_of"] = previous["run_id"]
