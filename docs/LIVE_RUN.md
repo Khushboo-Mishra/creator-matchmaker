@@ -65,6 +65,30 @@ Resume still makes calls for unfinished work. Do not edit inputs, model settings
 code or checkpoint files between migration and resume. Structured reference enums
 are locally tested, but successful live completion must still be verified.
 
+### One-time migration after embedding rate-limit pacing
+
+New embedding HTTP attempts (including retries) are spaced at least 0.8 seconds
+apart, about 75/minute in this process. Cache hits have no added delay. Do not run
+multiple pipeline processes: other apps sharing the project also consume quota.
+Retries use the larger of the local backoff and Google's Retry-After/RetryInfo
+delay. Explicit daily-quota errors and requested waits over 60 seconds stop the
+run instead of repeatedly spending requests. Resume later with the same inputs.
+Pacing does not increase the daily quota or guarantee against token limits.
+
+For the approved pre-pacing checkpoint, migrate offline once:
+
+```powershell
+python -m src.migrate_checkpoint --source data/checkpoints/live-attempt-3 --output data/checkpoints/live-attempt-4 --campaign examples/campaign.json --discovery data/discovered_candidates.json --trends data/trends_live.json
+```
+
+The migration rechecks sources, preserves completed evaluations and provenance,
+and leaves the original untouched. Skip this if already performed for you.
+Resume with the diagnostic launcher to retain useful quota error details:
+
+```powershell
+python scripts/run_diagnostic.py run --campaign examples/campaign.json --mode live --discovery data/discovered_candidates.json --trends data/trends_live.json --checkpoint data/checkpoints/live-attempt-4 --resume
+```
+
 ## 1. Prepare
 
 Activate your existing virtual environment, then:

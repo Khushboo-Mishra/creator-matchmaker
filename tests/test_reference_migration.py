@@ -6,14 +6,15 @@ import pytest
 
 from src.campaign import Campaign
 from src.checkpoint import atomic_write, digest
-from src.migrate_checkpoint import migrate, REFERENCE_CODE
+from src.migrate_checkpoint import migrate, REFERENCE_CODE, PACER_SOURCE_CODE
 from src.pipeline import code_version, run
 from src.providers import DemoProvider
 
 
 @pytest.mark.parametrize("tamper", [False, True])
+@pytest.mark.parametrize("source_code", [REFERENCE_CODE, PACER_SOURCE_CODE])
 def test_reference_migration_checks_evidence_and_preserves_completed_work(
-    tmp_path, tamper
+    tmp_path, tamper, source_code
 ):
     at = datetime(2026, 10, 26, tzinfo=timezone.utc)
     campaign = Campaign(**json.loads(Path("examples/campaign.json").read_text()))
@@ -32,7 +33,7 @@ def test_reference_migration_checks_evidence_and_preserves_completed_work(
         run(campaign, Failing(at), at, checkpoint_path=source)
     manifest = json.loads((source / "checkpoint.json").read_text())
     manifest.pop("checksum")
-    manifest["bindings"]["code"] = REFERENCE_CODE
+    manifest["bindings"]["code"] = source_code
     atomic_write(source / "checkpoint.json", dict(manifest, checksum=digest(manifest)))
     bindings = dict(manifest["bindings"], code=code_version())
     if tamper:
@@ -48,7 +49,11 @@ def test_reference_migration_checks_evidence_and_preserves_completed_work(
     before = {p.name: p.read_bytes() for p in source.glob("*")}
     report = migrate(source, target, bindings, campaign)
     assert report["evaluations_reused"] == 1
-    assert report["retained_evaluation_prompt_version"] == "metadata-evidence-5"
+    assert report["retained_evaluation_prompt_version"].startswith(
+        "metadata-evidence-5"
+        if source_code == REFERENCE_CODE
+        else "metadata-evidence-6"
+    )
     assert before == {p.name: p.read_bytes() for p in source.glob("*")}
 
     class Resume(DemoProvider):

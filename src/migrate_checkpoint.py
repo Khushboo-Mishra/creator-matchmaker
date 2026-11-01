@@ -16,6 +16,7 @@ from .providers import LiveProvider
 
 LEGACY_CODE = "fd4a6217447f2576d04a942723c5acb0b37ccb77f66f0a47a0538eb4cf0f1eed"
 REFERENCE_CODE = "df606f53fd5ed1511b84a25b792da541b4cbac455ba5e043004fd87dcb3acd30"
+PACER_SOURCE_CODE = "3af7bbbd171d13e17b54a731fdda6a18f28caf7a955874b77bfc8707e2878c84"
 VALIDATION_FILES = {
     "evaluation.py": "da73697877d741f694b19564fd5d356d492319fbe116e50fccdb0b1d7db60f28",
     "metadata_evidence.py": "af6744260a5ac4e7bfb47436570dff25975a5ce0066f691c1721f97e7f7724d5",
@@ -27,7 +28,7 @@ COLLECTION_FILES = {
     "config.py": "229ac66b225199569e218ac3b8abfe4e4e5e9540c15e345f4fcbc0bda6bed918",
     "discover.py": "8a404248b928e34c7893d70d57ca0ac18e338f3b38735817fb83e648ad524aa1",
     "pull.py": "24584e96043a20a98c63f7be3d2bb039e035a8e9badefba344b5fbe9b29997d1",
-    "score_ai.py": "681f4b1b4ec965541ad148e686f42d1e895fdf08ffc437f18b9d3f51f8083bef",
+    "score_ai.py": "328e2eb94a000773c328c8cf44cd5cc066d443847fe5633e38aed5b189ab1dc5",
 }
 COLLECTION_METHODS = {
     "discover": "0e55fff29f3d5c2e6e82ad2d6372a60d68c948f770bee8b259b29a142ea80b8d",
@@ -56,8 +57,8 @@ def migrate(source, destination, bindings, campaign=None, trends=None):
     if digest(state) != checksum:
         raise ValueError("Source checkpoint manifest integrity mismatch")
     old = state["bindings"]
-    preserve_evaluations = old["code"] == REFERENCE_CODE
-    if old["code"] not in {LEGACY_CODE, REFERENCE_CODE}:
+    preserve_evaluations = old["code"] in {REFERENCE_CODE, PACER_SOURCE_CODE}
+    if old["code"] not in {LEGACY_CODE, REFERENCE_CODE, PACER_SOURCE_CODE}:
         raise ValueError(
             "This migration only supports the approved legacy code version"
         )
@@ -117,10 +118,18 @@ def migrate(source, destination, bindings, campaign=None, trends=None):
         "copied": counts,
         "evaluations_not_reused": skipped,
         "evaluations_reused": reused,
-        "retained_evaluation_prompt_version": "metadata-evidence-5" if reused else None,
+        "retained_evaluation_prompt_version": (
+            (
+                "metadata-evidence-6 (see previous_migration for inherited versions)"
+                if old["code"] == PACER_SOURCE_CODE
+                else "metadata-evidence-5"
+            )
+            if reused
+            else None
+        ),
         "previous_migration": state.get("migration"),
         "policy": (
-            "Preserve source-validated evaluations; new judgments use bounded references"
+            "Preserve source-validated evaluations; transport pacing/retry only for bounded-reference source"
             if preserve_evaluations
             else "Raw collection and embeddings only; re-evaluate with current prompt"
         ),
