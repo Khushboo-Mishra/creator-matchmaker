@@ -1,6 +1,7 @@
 """Evidence contracts shared by live and explicitly synthetic providers."""
 
 import math
+from copy import deepcopy
 from datetime import datetime
 from urllib.parse import urlparse
 from statistics import median
@@ -136,10 +137,11 @@ def _evaluate(channel, campaign, provider, trend_snapshot, min_comments=10):
         else []
     )
     result = provider.judge(campaign, metadata, selected, trend_snapshot)
-    from .judgment_contract import validate_judgment
+    from .judgment_contract import validate_judgment, schema_for_trends
 
-    provider.last_judgment = result
-    validate_judgment(result)
+    provider.last_judgment = deepcopy(result)
+    validate_judgment(result, schema_for_trends(trend_snapshot))
+    result = deepcopy(result)
     counts = {
         "sampled": len(channel.get("comment_records", [])),
         "usable": len(comments),

@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 from src.campaign import Campaign
 from src.evaluation import evaluate
 from src.providers import DemoProvider, LiveProvider
-from src.judgment_contract import JUDGMENT_SCHEMA, validate_judgment
+from src.judgment_contract import JUDGMENT_SCHEMA, validate_judgment, schema_for_trends
 from src import providers, failure_diagnostics
 
 
@@ -135,7 +135,9 @@ def test_live_raw_failure_saved_without_headers(
     with pytest.raises(ValueError, match="Creator @demo1: judgment response"):
         evaluate(channel, campaign, provider, None)
     assert len(calls) == 1  # No hidden paid repair loop.
-    assert calls[0]["json"]["generationConfig"]["responseJsonSchema"] == JUDGMENT_SCHEMA
+    assert calls[0]["json"]["generationConfig"][
+        "responseJsonSchema"
+    ] == schema_for_trends(None)
     saved = next((tmp_path / "diagnostics").glob("*.json")).read_text()
     assert "secret-test-key" not in saved
     assert json.loads(saved)["response_text"] == text
@@ -147,3 +149,93 @@ def test_valid_evaluation_does_not_write_diagnostics(context, tmp_path, monkeypa
     monkeypatch.setattr(failure_diagnostics, "DATA", tmp_path)
     evaluate(channel, campaign, provider, None)
     assert not (tmp_path / "diagnostics").exists()
+
+
+@pytest.mark.parametrize("topics", [[], [{"topic": "planning"}]])
+def test_request_excludes_checked_topics_and_bounds_matches(
+    context, monkeypatch, topics
+):
+    campaign, _, _, result = context
+    snapshot = {
+        "source": "Google Trends",
+        "fetched_at": "2026-10-26T00:00:00+00:00",
+        "trends": topics,
+        "checked_topics": [{"topic": "not-rising-secret-marker"}],
+    }
+    original = json.dumps(snapshot, sort_keys=True)
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    def post(**kwargs):
+        calls.append(kwargs)
+        return Response()
+
+    monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
+    LiveProvider().judge(campaign, [], [], snapshot)
+    prompt = calls[0]["json"]["contents"][0]["parts"][0]["text"]
+    assert "not-rising-secret-marker" not in prompt
+    data = json.loads(prompt.split("\nDATA\n")[1])
+    assert data["trends"]["trends"] == topics
+    assert "checked_topics" not in data["trends"]
+    schema = calls[0]["json"]["generationConfig"]["responseJsonSchema"]
+    bounds = schema["properties"]["trend_matches"]
+    if topics:
+        assert bounds["items"]["properties"]["topic"]["enum"] == ["planning"]
+    else:
+        assert bounds["maxItems"] == 0
+    assert json.dumps(snapshot, sort_keys=True) == original
+    assert "maxItems" not in JUDGMENT_SCHEMA["properties"]["trend_matches"]
+
+
+@pytest.mark.parametrize(
+    "snapshot", [None, {"trends": [], "checked_topics": [{"topic": "storyboard"}]}]
+)
+def test_nonrising_match_still_rejected_locally(context, monkeypatch, snapshot):
+    campaign, provider, channel, result = context
+    result["trend_matches"] = [
+        {
+            "topic": "storyboard",
+            "campaign_relevance": 0.9,
+            "creator_proximity": 0.8,
+            "video_ids": [channel["videos"][0]["video_id"]],
+        }
+    ]
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+    with pytest.raises(ValueError, match="trend_matches.*maxItems"):
+        evaluate(channel, campaign, provider, snapshot)
+
+
+def test_known_topic_only_and_video_provenance_still_required(context, monkeypatch):
+    campaign, provider, channel, result = context
+    snapshot = {
+        "trends": [{"topic": "planning"}],
+        "fetched_at": "2026-10-26T00:00:00+00:00",
+    }
+    result["trend_matches"] = [
+        {
+            "topic": "other",
+            "campaign_relevance": 0.9,
+            "creator_proximity": 0.8,
+            "video_ids": ["invented"],
+        }
+    ]
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+    with pytest.raises(ValueError, match="enum"):
+        evaluate(channel, campaign, provider, snapshot)
+    result["trend_matches"][0]["topic"] = "planning"
+    with pytest.raises(ValueError, match="supplied videos"):
+        evaluate(channel, campaign, provider, snapshot)
+    result["trend_matches"][0]["video_ids"] = [channel["videos"][0]["video_id"]]
+    assert evaluate(channel, campaign, provider, snapshot)["dimensions"]["trend_fit"][
+        "score"
+    ] == pytest.approx(0.72)

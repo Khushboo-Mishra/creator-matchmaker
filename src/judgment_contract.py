@@ -1,6 +1,7 @@
 """Model output shape shared by Gemini constraints and local validation."""
 
 import math
+from copy import deepcopy
 
 from jsonschema import Draft202012Validator
 
@@ -53,7 +54,18 @@ JUDGMENT_SCHEMA = obj(
 )
 
 
-def validate_judgment(result):
+def schema_for_trends(snapshot):
+    schema = deepcopy(JUDGMENT_SCHEMA)
+    topics = list(dict.fromkeys(t["topic"] for t in (snapshot or {}).get("trends", [])))
+    matches = schema["properties"]["trend_matches"]
+    if topics:
+        matches["items"]["properties"]["topic"] = {"type": "string", "enum": topics}
+    else:
+        matches["maxItems"] = 0
+    return schema
+
+
+def validate_judgment(result, schema=None):
     # JSON Schema considers NaN a number, so reject nonfinite values explicitly.
     def finite(value, path):
         if isinstance(value, float) and not math.isfinite(value):
@@ -66,7 +78,9 @@ def validate_judgment(result):
                 finite(child, f"{path}[{i}]")
 
     finite(result, "judgment")
-    error = next(Draft202012Validator(JUDGMENT_SCHEMA).iter_errors(result), None)
+    error = next(
+        Draft202012Validator(schema or JUDGMENT_SCHEMA).iter_errors(result), None
+    )
     if error:
         path = "judgment" + "".join(
             f"[{p}]" if isinstance(p, int) else f".{p}" for p in error.absolute_path
