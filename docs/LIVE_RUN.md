@@ -1,5 +1,31 @@
 # First live run (PowerShell, from the repository root)
 
+## Current correction: new run required, no migration
+
+Comment sampling now uses the three highest-view videos within the same recent-15
+window used by evaluation. Audience explanations describe interests expressed in
+sampled comments, never verified viewer occupations or demographics. The report
+uses bounded audience wording and retains the original model prose in the audit.
+Raw cosine similarity, its penalty, ranking weights and roster formula are unchanged.
+Accept the corrected roster even if the previous ranks 1/2/7/5 no longer appear.
+
+Do not resume or migrate live-attempt-1 through live-attempt-4 after this correction.
+Historical migration examples below are for older versions only; their collection
+compatibility checks now reject the changed sampling method. Keep the original live
+run unchanged. Ordinary rescore/export also rejects its older code/prompt version.
+
+Local verification must include tests and a demo run with PDF output before live
+spending. A demo with an edited campaign can legitimately have missing synthetic
+trend evidence; fixture-backed tests exercise the measured-trend path separately.
+
+After explicit approval of quota spending, use a NEW checkpoint and the existing
+campaign-matched discovery/trend inputs. Discovery searches can be skipped, but
+channel pulls, newly sampled comments, embeddings and judgments will make API calls.
+The previous remaining daily allowance is not a reliable budget for a fresh run.
+Check current project quotas first. Do not switch models or silently reuse old
+evaluations. The prior roster's unchanged membership under 12 one-at-a-time +/-10%
+weight tests is evidence about that old snapshot only, not the corrected run.
+
 Do not share .env or API keys. These steps make paid/quota-consuming calls only
 where noted. Live run commands now automatically create a private checkpoint
 directory and print its path before collection.

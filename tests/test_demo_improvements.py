@@ -11,14 +11,17 @@ from src.pipeline import run
 from src.providers import DemoProvider
 from src.evaluation import valid_trends
 from src.ranking import marginal_components
-from src.reports import write_reports
+from src.reports import write_reports, report_sections
 
 
 @pytest.fixture
 def demo():
     campaign = Campaign(**json.loads(Path("examples/campaign.json").read_text()))
     at = datetime(2026, 10, 26, tzinfo=timezone.utc)
-    return run(campaign, DemoProvider(at), at, trend_snapshot=load_trends(campaign, "demo"))
+    # This test owns its synthetic fixture, independent of editable live inputs.
+    trends = json.loads(Path("examples/trend_snapshot.json").read_text())
+    trends["campaign_fingerprint"] = campaign.fingerprint()
+    return run(campaign, DemoProvider(at), at, trend_snapshot=trends)
 
 
 def test_demo_diversity_and_complementary_picks(demo):
@@ -76,6 +79,10 @@ def test_report_headings_and_grouped_quotes(demo, tmp_path):
     assert "\n- " in report
     assert "not directly comparable" in report
     assert "## How the team is chosen" in report
+    assert report.count("## Next-best alternatives") == 1
+    assert "### Audience Relevance" in report
+    assert "not a verified fact about viewers" in report
+    assert isinstance(dict(report_sections(demo))["Warnings to review"], list)
 
 
 def test_live_mode_warning_and_file_export_with_mocked_provider(tmp_path):

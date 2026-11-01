@@ -14,7 +14,7 @@ from src.providers import DemoProvider
 @pytest.mark.parametrize("tamper", [False, True])
 @pytest.mark.parametrize("source_code", [REFERENCE_CODE, PACER_SOURCE_CODE])
 def test_reference_migration_checks_evidence_and_preserves_completed_work(
-    tmp_path, tamper, source_code
+    tmp_path, tamper, source_code, synthetic_migration_compatibility
 ):
     at = datetime(2026, 10, 26, tzinfo=timezone.utc)
     campaign = Campaign(**json.loads(Path("examples/campaign.json").read_text()))

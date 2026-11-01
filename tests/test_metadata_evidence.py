@@ -41,7 +41,7 @@ def test_unknown_metadata_id_rejected():
 
 
 @pytest.fixture
-def legacy(tmp_path):
+def legacy(tmp_path, synthetic_migration_compatibility):
     bindings = {"code": LEGACY_CODE, "model": "test"}
     cache = Checkpoint(
         tmp_path / "old", bindings, datetime(2026, 11, 1, tzinfo=timezone.utc)
