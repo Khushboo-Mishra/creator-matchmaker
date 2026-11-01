@@ -157,6 +157,8 @@ def test_valid_evaluation_does_not_write_diagnostics(context, tmp_path, monkeypa
 @pytest.mark.parametrize("unknown", [False, True])
 def test_audience_ids_resolve_verbatim_or_reject(context, monkeypatch, unknown):
     campaign, _, _, result = context
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = []
     comment = {
         "comment_id": "original",
         "video_id": "v",
@@ -196,6 +198,8 @@ def test_request_excludes_checked_topics_and_bounds_matches(
 ):
     campaign, _, _, result = context
     result["audience"]["quotes"] = []
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = []
     snapshot = {
         "source": "Google Trends",
         "fetched_at": "2026-10-26T00:00:00+00:00",
@@ -235,6 +239,45 @@ def test_request_excludes_checked_topics_and_bounds_matches(
         assert bounds["maxItems"] == 0
     assert json.dumps(snapshot, sort_keys=True) == original
     assert "maxItems" not in JUDGMENT_SCHEMA["properties"]["trend_matches"]
+
+
+def test_live_metadata_selection_passes_exact_source_validation(context, monkeypatch):
+    campaign, demo, channel, result = context
+    result["audience"]["quotes"] = [
+        {"comment_id": c["comment_id"]} for c in channel["comment_records"][:2]
+    ]
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = [{"passage_id": "m0-l0"}]
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    def post(**kwargs):
+        calls.append(kwargs)
+        return Response()
+
+    monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
+    provider = LiveProvider()
+    monkeypatch.setattr(provider, "embed", demo.embed)
+    analysis = evaluate(channel, campaign, provider, None)
+    source = channel["videos"][0]
+    assert (
+        analysis["capability_evidence"][0]["quote"]
+        == (source["title"] + " " + source["description"]).splitlines()[0]
+    )
+    data = json.loads(
+        calls[0]["json"]["contents"][0]["parts"][0]["text"].split("\nDATA\n")[1]
+    )
+    assert data["metadata_passages"][0]["passage_id"] == "m0-l0"
 
 
 @pytest.mark.parametrize(

@@ -26,7 +26,7 @@ from .screening import screen, relative
 from .rank_correlation import spearman_rho
 
 SCORING_VERSION = "locked-3"
-PROMPT_VERSION = "metadata-evidence-4"
+PROMPT_VERSION = "metadata-evidence-5"
 
 
 def fingerprint(value):
@@ -225,6 +225,8 @@ def run(
     snapshot["data_hash"] = fingerprint(
         {"channels": channels, "evaluated": evaluated, "trends": trend_snapshot}
     )
+    if checkpoint and checkpoint.migration:
+        snapshot["checkpoint_migration"] = deepcopy(checkpoint.migration)
     return score_snapshot(snapshot)
 
 

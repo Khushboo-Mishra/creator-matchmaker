@@ -30,6 +30,7 @@ def atomic_write(path, value):
 class Checkpoint:
     def __init__(self, directory, bindings, at, resume=False):
         self.directory = Path(directory)
+        self.migration = None
         manifest = self.directory / "checkpoint.json"
         if resume:
             state = json.loads(manifest.read_text(encoding="utf-8"))
@@ -41,6 +42,7 @@ class Checkpoint:
                     "Checkpoint inputs, code, model or settings changed; cannot resume"
                 )
             self.at = state["at"]
+            self.migration = state.get("migration")
         else:
             self.directory.mkdir(parents=True, exist_ok=False)
             state = {"bindings": bindings, "at": at.isoformat()}

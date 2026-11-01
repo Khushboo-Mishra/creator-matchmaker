@@ -23,7 +23,24 @@ They are diagnostic records, not completed audit snapshots or resume checkpoints
 Scores are never silently clamped or converted. Structured output constraints
 reduce malformed responses but do not replace local evidence validation.
 Audience evidence is selected by comment ID; the backend copies the full original
-comment verbatim. Metadata quotations still undergo strict source validation.
+comment verbatim. Metadata evidence is selected by passage ID; the backend copies
+each original line separately and still applies strict source validation.
+
+### One-time migration after the metadata-evidence fix
+
+The old prompt-version checkpoint cannot resume directly. A narrow migration
+checks the approved old code hash, collection implementation, settings and entry
+checksums, then copies raw collections/embeddings to a NEW checkpoint:
+
+```powershell
+python -m src.migrate_checkpoint --source data/checkpoints/live-attempt-1 --output data/checkpoints/live-attempt-2 --campaign examples/campaign.json --discovery data/discovered_candidates.json --trends data/trends_live.json
+```
+
+This makes no API calls. It leaves the original intact, records provenance, and
+does NOT reuse completed evaluations from the old prompt. Resume the new directory
+using the run command with --checkpoint data/checkpoints/live-attempt-2 --resume.
+That resume still spends API quota on evaluations and any uncached work.
+Migration refuses an existing output directory. Do not rerun migration after it succeeds.
 
 ## 1. Prepare
 
