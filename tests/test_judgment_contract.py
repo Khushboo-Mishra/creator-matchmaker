@@ -138,8 +138,8 @@ def test_live_raw_failure_saved_without_headers(
     assert (
         calls[0]["json"]["generationConfig"]["responseJsonSchema"]["properties"][
             "trend_matches"
-        ]
-        == schema_for_trends(None)["properties"]["trend_matches"]
+        ]["maxItems"]
+        == 0
     )
     saved = next((tmp_path / "diagnostics").glob("*.json")).read_text()
     assert "secret-test-key" not in saved
@@ -157,6 +157,7 @@ def test_valid_evaluation_does_not_write_diagnostics(context, tmp_path, monkeypa
 @pytest.mark.parametrize("unknown", [False, True])
 def test_audience_ids_resolve_verbatim_or_reject(context, monkeypatch, unknown):
     campaign, _, _, result = context
+    result["capabilities"]["demonstration_video_ids"] = []
     for section in ("brand_fit", "safety", "capabilities"):
         result[section]["evidence"] = []
     comment = {
@@ -183,7 +184,7 @@ def test_audience_ids_resolve_verbatim_or_reject(context, monkeypatch, unknown):
         providers.score_ai, "_post_with_retry", lambda **kwargs: Response()
     )
     if unknown:
-        with pytest.raises(ValueError, match="unknown comment_id"):
+        with pytest.raises(ValueError, match="comment_id.*enum"):
             LiveProvider().judge(campaign, [], [comment], None)
     else:
         resolved = LiveProvider().judge(campaign, [], [comment], None)
@@ -198,6 +199,7 @@ def test_request_excludes_checked_topics_and_bounds_matches(
 ):
     campaign, _, _, result = context
     result["audience"]["quotes"] = []
+    result["capabilities"]["demonstration_video_ids"] = []
     for section in ("brand_fit", "safety", "capabilities"):
         result[section]["evidence"] = []
     snapshot = {

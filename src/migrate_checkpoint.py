@@ -1,4 +1,4 @@
-"""One-off raw-cache migration. No APIs; completed judgments are not reused."""
+"""Migrate approved checkpoint versions offline with explicit evidence checks."""
 
 import argparse
 from datetime import datetime, timezone
@@ -15,6 +15,14 @@ from .pipeline import code_version, fingerprint
 from .providers import LiveProvider
 
 LEGACY_CODE = "fd4a6217447f2576d04a942723c5acb0b37ccb77f66f0a47a0538eb4cf0f1eed"
+REFERENCE_CODE = "df606f53fd5ed1511b84a25b792da541b4cbac455ba5e043004fd87dcb3acd30"
+VALIDATION_FILES = {
+    "evaluation.py": "da73697877d741f694b19564fd5d356d492319fbe116e50fccdb0b1d7db60f28",
+    "metadata_evidence.py": "af6744260a5ac4e7bfb47436570dff25975a5ce0066f691c1721f97e7f7724d5",
+    "judgment_contract.py": "8dd8a6426cabbbb856d426d3811d5b272a0c12d8b23370bb662ddda5a6055436",
+    "ranking.py": "6947d3a75acae2ae71968126f913ab843c6a56048e2d35384df538cf2ba04c21",
+    "screening.py": "3e4137865b3308cb0daaefe7ff5ddecc5cfa92c503fa83050793f4e7045ddda4",
+}
 COLLECTION_FILES = {
     "config.py": "229ac66b225199569e218ac3b8abfe4e4e5e9540c15e345f4fcbc0bda6bed918",
     "discover.py": "8a404248b928e34c7893d70d57ca0ac18e338f3b38735817fb83e648ad524aa1",
@@ -33,7 +41,7 @@ def sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def migrate(source, destination, bindings):
+def migrate(source, destination, bindings, campaign=None, trends=None):
     source, destination = Path(source), Path(destination)
     if destination.exists():
         raise ValueError("Migration destination must be a new directory")
@@ -48,7 +56,8 @@ def migrate(source, destination, bindings):
     if digest(state) != checksum:
         raise ValueError("Source checkpoint manifest integrity mismatch")
     old = state["bindings"]
-    if old["code"] != LEGACY_CODE:
+    preserve_evaluations = old["code"] == REFERENCE_CODE
+    if old["code"] not in {LEGACY_CODE, REFERENCE_CODE}:
         raise ValueError(
             "This migration only supports the approved legacy code version"
         )
@@ -58,6 +67,21 @@ def migrate(source, destination, bindings):
         raise ValueError("Campaign, data, model or calibration mismatch")
     if bindings["code"] != code_version():
         raise ValueError("Target code version mismatch")
+    if preserve_evaluations:
+        for name, expected in VALIDATION_FILES.items():
+            if (
+                sha(Path(__file__).with_name(name).read_text(encoding="utf-8"))
+                != expected
+            ):
+                raise ValueError(f"Evaluation semantics changed: {name}")
+        if (
+            campaign is None
+            or campaign.fingerprint() != old["campaign"]
+            or fingerprint(trends) != old["trends"]
+        ):
+            raise ValueError(
+                "Migration requires matching campaign and trends for evidence checks"
+            )
     records, counts = [], {}
     skipped = 0
     for path in sorted(source.glob("*.json")):
@@ -69,11 +93,18 @@ def migrate(source, destination, bindings):
         record = json.loads(path.read_text(encoding="utf-8"))
         if record["key"] != key or digest(record["value"]) != record["checksum"]:
             raise ValueError(f"Checkpoint entry integrity mismatch: {path.name}")
-        if stage == "evaluation":
+        if stage == "evaluation" and not preserve_evaluations:
             skipped += 1
             continue
         records.append((path.name, record))
         counts[stage] = counts.get(stage, 0) + 1
+    reused = 0
+    if preserve_evaluations:
+        from .checkpoint_validation import validate_cached_evaluations
+
+        reused = validate_cached_evaluations(
+            records, campaign, trends, old["min_comments"]
+        )
     destination.mkdir(parents=True, exist_ok=False)
     for name, record in records:
         atomic_write(destination / name, record)
@@ -85,7 +116,14 @@ def migrate(source, destination, bindings):
         "created_at": datetime.now(timezone.utc).isoformat(),
         "copied": counts,
         "evaluations_not_reused": skipped,
-        "policy": "Raw collection and embeddings only; re-evaluate with current prompt",
+        "evaluations_reused": reused,
+        "retained_evaluation_prompt_version": "metadata-evidence-5" if reused else None,
+        "previous_migration": state.get("migration"),
+        "policy": (
+            "Preserve source-validated evaluations; new judgments use bounded references"
+            if preserve_evaluations
+            else "Raw collection and embeddings only; re-evaluate with current prompt"
+        ),
     }
     new_state = {"bindings": bindings, "at": state["at"], "migration": migration}
     atomic_write(
@@ -123,7 +161,11 @@ def main(argv=None):
         "min_comments": args.min_comments,
         "reach_exponent": args.reach_exponent,
     }
-    print(json.dumps(migrate(args.source, args.output, bindings), indent=2))
+    print(
+        json.dumps(
+            migrate(args.source, args.output, bindings, campaign, trends), indent=2
+        )
+    )
 
 
 if __name__ == "__main__":

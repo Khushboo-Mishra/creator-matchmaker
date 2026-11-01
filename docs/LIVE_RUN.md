@@ -42,6 +42,29 @@ using the run command with --checkpoint data/checkpoints/live-attempt-2 --resume
 That resume still spends API quota on evaluations and any uncached work.
 Migration refuses an existing output directory. Do not rerun migration after it succeeds.
 
+### One-time migration after the bounded-reference fix
+
+The next fix restricts video, comment and passage selections to supplied IDs.
+For the approved metadata-evidence-5 checkpoint only, the migration also verifies
+unchanged evaluation/scoring code and rechecks cached evidence against its saved
+sources offline. Compatible completed evaluations are retained, with their original
+prompt version recorded in migration provenance. Unknown versions are rejected.
+
+```powershell
+python -m src.migrate_checkpoint --source data/checkpoints/live-attempt-2 --output data/checkpoints/live-attempt-3 --campaign examples/campaign.json --discovery data/discovered_candidates.json --trends data/trends_live.json
+```
+
+This makes no API calls and leaves the source intact. Run it only once; if migration
+was already performed for you, skip it. Resume with:
+
+```powershell
+python -m src.matchmaker run --campaign examples/campaign.json --mode live --discovery data/discovered_candidates.json --trends data/trends_live.json --checkpoint data/checkpoints/live-attempt-3 --resume
+```
+
+Resume still makes calls for unfinished work. Do not edit inputs, model settings,
+code or checkpoint files between migration and resume. Structured reference enums
+are locally tested, but successful live completion must still be verified.
+
 ## 1. Prepare
 
 Activate your existing virtual environment, then:
