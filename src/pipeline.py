@@ -26,7 +26,7 @@ from .screening import screen, relative
 from .rank_correlation import spearman_rho
 
 SCORING_VERSION = "locked-3"
-PROMPT_VERSION = "metadata-evidence-3"
+PROMPT_VERSION = "metadata-evidence-4"
 
 
 def fingerprint(value):
@@ -52,8 +52,35 @@ def run(
     min_comments=10,
     reach_exponent=1.0,
     discovery_snapshot=None,
+    checkpoint_path=None,
+    resume=False,
 ):
     at = at or datetime.now(timezone.utc)
+    checkpoint = None
+    if resume and checkpoint_path is None:
+        raise ValueError("--resume requires --checkpoint")
+    if checkpoint_path is not None:
+        from .checkpoint import Checkpoint, CachedProvider
+        from .config import GEMINI_EMBEDDING_MODEL
+
+        checkpoint = Checkpoint(
+            checkpoint_path,
+            {
+                "campaign": campaign.fingerprint(),
+                "trends": fingerprint(trend_snapshot),
+                "discovery": fingerprint(discovery_snapshot),
+                "code": code_version(),
+                "model": provider.model,
+                "embedding_model": GEMINI_EMBEDDING_MODEL,
+                "mode": provider.mode,
+                "min_comments": min_comments,
+                "reach_exponent": reach_exponent,
+            },
+            at,
+            resume=resume,
+        )
+        at = datetime.fromisoformat(checkpoint.at)
+        provider = CachedProvider(provider, checkpoint)
     if at.tzinfo is None:
         raise ValueError("Run time must include timezone")
     if (
@@ -92,7 +119,13 @@ def run(
     for record in shortlisted:
         channel = record["channel"]
         channel["comment_records"] = provider.comments(channel)
-        analysis = evaluate(channel, campaign, provider, trend_snapshot, min_comments)
+
+        def analyze():
+            return evaluate(channel, campaign, provider, trend_snapshot, min_comments)
+
+        analysis = (
+            checkpoint.call("evaluation", channel, analyze) if checkpoint else analyze()
+        )
         candidate = {
             "handle": channel["handle"],
             "channel_id": channel["channel_id"],

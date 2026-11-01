@@ -135,9 +135,12 @@ def test_live_raw_failure_saved_without_headers(
     with pytest.raises(ValueError, match="Creator @demo1: judgment response"):
         evaluate(channel, campaign, provider, None)
     assert len(calls) == 1  # No hidden paid repair loop.
-    assert calls[0]["json"]["generationConfig"][
-        "responseJsonSchema"
-    ] == schema_for_trends(None)
+    assert (
+        calls[0]["json"]["generationConfig"]["responseJsonSchema"]["properties"][
+            "trend_matches"
+        ]
+        == schema_for_trends(None)["properties"]["trend_matches"]
+    )
     saved = next((tmp_path / "diagnostics").glob("*.json")).read_text()
     assert "secret-test-key" not in saved
     assert json.loads(saved)["response_text"] == text
@@ -151,11 +154,48 @@ def test_valid_evaluation_does_not_write_diagnostics(context, tmp_path, monkeypa
     assert not (tmp_path / "diagnostics").exists()
 
 
+@pytest.mark.parametrize("unknown", [False, True])
+def test_audience_ids_resolve_verbatim_or_reject(context, monkeypatch, unknown):
+    campaign, _, _, result = context
+    comment = {
+        "comment_id": "original",
+        "video_id": "v",
+        "text": "im an digital artist i  love\nconcept art ❤️",
+    }
+    result["audience"]["quotes"] = [
+        {"comment_id": "missing" if unknown else "original"}
+    ] * 2
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    monkeypatch.setattr(
+        providers.score_ai, "_post_with_retry", lambda **kwargs: Response()
+    )
+    if unknown:
+        with pytest.raises(ValueError, match="unknown comment_id"):
+            LiveProvider().judge(campaign, [], [comment], None)
+    else:
+        resolved = LiveProvider().judge(campaign, [], [comment], None)
+        assert resolved["audience"]["quotes"] == [
+            {"comment_id": "original", "video_id": "v", "quote": comment["text"]}
+        ]
+
+
 @pytest.mark.parametrize("topics", [[], [{"topic": "planning"}]])
 def test_request_excludes_checked_topics_and_bounds_matches(
     context, monkeypatch, topics
 ):
     campaign, _, _, result = context
+    result["audience"]["quotes"] = []
     snapshot = {
         "source": "Google Trends",
         "fetched_at": "2026-10-26T00:00:00+00:00",

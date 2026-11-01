@@ -18,6 +18,7 @@ venv/
 .local-deps/
 data/runs/
 data/diagnostics/
+data/checkpoints/
 
 # node
 node_modules/

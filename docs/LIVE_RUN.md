@@ -1,7 +1,20 @@
 # First live run (PowerShell, from the repository root)
 
 Do not share .env or API keys. These steps make paid/quota-consuming calls only
-where noted. There is no automatic resume after a failed live run.
+where noted. Live run commands now automatically create a private checkpoint
+directory and print its path before collection.
+
+To choose a memorable NEW directory for the next run, append
+`--checkpoint data/checkpoints/live-attempt-1` to the run command.
+If interrupted or failed, repeat the SAME run command with that checkpoint path
+and append `--resume`. Do not start another process against the same checkpoint.
+Completed pulls, comments, embeddings and validated evaluations are reused.
+The interrupted call or failed evaluation may still need API calls.
+Resume freezes the original run time and rejects changes to code, campaign,
+discovery, trends, model configuration or calibration. A checksum detects
+accidental checkpoint edits; these files are not signed security attestations.
+Keep checkpoints private and do not manually modify them. Older failed runs
+without checkpoints cannot be resumed. Fresh data requires a new checkpoint.
 
 Model-output validation failures now identify the creator and field. Failed
 live evaluations save private evidence and model output under data/diagnostics/
@@ -9,6 +22,8 @@ live evaluations save private evidence and model output under data/diagnostics/
 They are diagnostic records, not completed audit snapshots or resume checkpoints.
 Scores are never silently clamped or converted. Structured output constraints
 reduce malformed responses but do not replace local evidence validation.
+Audience evidence is selected by comment ID; the backend copies the full original
+comment verbatim. Metadata quotations still undergo strict source validation.
 
 ## 1. Prepare
 

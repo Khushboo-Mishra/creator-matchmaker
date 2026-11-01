@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+from uuid import uuid4
 
 from .campaign import Campaign
 from .pipeline import run, revise, save, verify_snapshot, validate_run, model_stability
@@ -37,7 +38,19 @@ def parser():
         if command == "run":
             s.add_argument("--campaign", required=True)
             s.add_argument("--mode", choices=["demo", "live"], required=True)
-            s.add_argument("--discovery", help="Saved campaign-matched discovery JSON; skips discovery API calls")
+            s.add_argument(
+                "--checkpoint",
+                help="New checkpoint directory, or existing directory with --resume",
+            )
+            s.add_argument(
+                "--resume",
+                action="store_true",
+                help="Reuse completed work from --checkpoint",
+            )
+            s.add_argument(
+                "--discovery",
+                help="Saved campaign-matched discovery JSON; skips discovery API calls",
+            )
         else:
             s.add_argument("--snapshot", required=True)
         s.add_argument(
@@ -117,6 +130,14 @@ def main(argv=None):
         )
         mode = previous["mode"] if previous else args.mode
         provider = LiveProvider() if mode == "live" else DemoProvider(at)
+        checkpoint = getattr(args, "checkpoint", None)
+        resume = getattr(args, "resume", False)
+        if resume and not checkpoint:
+            raise ValueError("--resume requires --checkpoint")
+        if args.command == "run" and mode == "live" and not checkpoint:
+            checkpoint = str(Path("data/checkpoints") / str(uuid4()))
+        if checkpoint:
+            print(f"Checkpoint: {Path(checkpoint).resolve()}", flush=True)
         snapshot = run(
             campaign,
             provider,
@@ -124,7 +145,11 @@ def main(argv=None):
             load_trends(campaign, mode, args.trends),
             args.min_comments,
             args.reach_exponent,
-            discovery_snapshot=read(args.discovery) if getattr(args, "discovery", None) else None,
+            discovery_snapshot=(
+                read(args.discovery) if getattr(args, "discovery", None) else None
+            ),
+            checkpoint_path=checkpoint,
+            resume=resume,
         )
         if previous:
             snapshot["refresh_of"] = previous["run_id"]

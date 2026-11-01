@@ -115,7 +115,8 @@ def test_live_judge_uses_supplied_campaign_and_json(monkeypatch):
 
     monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
     p = LiveProvider()
-    p.judge(campaign(), [], [], None)
+    with pytest.raises(ValueError, match="required"):
+        p.judge(campaign(), [], [], None)
     assert "Milanote" in seen[0]["json"]["contents"][0]["parts"][0]["text"]
     assert seen[0]["json"]["generationConfig"]["responseMimeType"] == "application/json"
 
