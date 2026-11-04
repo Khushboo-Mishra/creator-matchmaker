@@ -239,7 +239,7 @@ footer a{color:var(--muted)}
 <section id="roadmap"><div class="wrap">
   <p class="eyebrow">What a month buys</p>
   <h2 class="sec">Roadmap</h2>
-  <p class="lede">Historical proposal below (not a description of the exported run). Selected teams are announced on 5 October and present on 11 November. The scoring engine and the casting interface already work, so the four weeks between go into evidence, balance and validation. Every item below is marked for what it actually is.</p>
+  <p class="lede">This was the four-week plan proposed in September, kept here with each item marked for what it is today. Most of it shipped: campaign inputs, the screening gate, evidence-bound scoring, similarity and coverage balancing, and the marketer report all run. What has not shipped is the blind human ranking that rank correlation needs, and that is called out below rather than quietly dropped.</p>
 
   <div class="spine">
     <div class="sp"><span>01</span>Discover</div>
@@ -259,7 +259,7 @@ footer a{color:var(--muted)}
   <h3 class="rh">5 October to 11 November</h3>
   <div class="weeks">
     <article class="week">
-      <header><span class="wk">Week 1</span><h4>Campaign setup and smart shortlisting</h4><span class="badge plan">Planned</span></header>
+      <header><span class="wk">Week 1</span><h4>Campaign setup and smart shortlisting</h4><span class="badge live">Built</span></header>
       <ul>
         <li>Campaign inputs for product, objective, target audience and brand requirements</li>
         <li>Controls for reach against engagement, established against emerging creators, evergreen against trend relevance</li>
@@ -267,11 +267,12 @@ footer a{color:var(--muted)}
         <li>Send only the strongest 20 or so candidates for deeper Gemini scoring</li>
         <li>Label fully scored, arithmetic-only and incomplete results distinctly</li>
       </ul>
+      <p class="dv" style="border-top:0;padding-top:0"><b>Status.</b> Shipped. The screening gate gives every candidate a screening score and only the strongest reach Gemini, which is what makes a run affordable.</p>
       <p class="dv"><b>Deliverable.</b> A strategist configures a campaign and generates an explainable, cost-controlled shortlist without editing code.</p>
     </article>
 
     <article class="week">
-      <header><span class="wk">Week 2</span><h4>Evidence-backed AI scoring</h4><span class="badge plan">Planned</span></header>
+      <header><span class="wk">Week 2</span><h4>Evidence-backed AI scoring</h4><span class="badge live">Built</span></header>
       <ul>
         <li>Calibrate audience relevance embeddings against blind human judgements</li>
         <li>Strengthen brand fit using titles, descriptions, comments and sponsorship signals</li>
@@ -279,22 +280,24 @@ footer a{color:var(--muted)}
         <li>Dated, cached trend snapshots with citations preserved</li>
         <li>Show the evidence and the confidence behind each AI-assisted score</li>
       </ul>
+      <p class="dv" style="border-top:0;padding-top:0"><b>Status.</b> Shipped, with one exception: calibrating audience relevance against a blind human ranking needs that ranking to exist first.</p>
       <p class="dv"><b>Deliverable.</b> More defensible audience relevance, brand fit and trend fit, each traceable to its evidence.</p>
     </article>
 
     <article class="week">
-      <header><span class="wk">Week 3</span><h4>Interactive roster builder</h4><span class="badge plan">Planned</span></header>
+      <header><span class="wk">Week 3</span><h4>Interactive roster builder</h4><span class="badge live">Built</span></header>
       <ul>
         <li>Compare alternative roster combinations side by side</li>
         <li>Detect audience overlap and excessive similarity between chosen creators</li>
         <li>Balance reach, engagement, creator size, audience coverage, content style and trend alignment</li>
         <li>Build on the weighting and swap behaviour already working in the prototype</li>
       </ul>
+      <p class="dv" style="border-top:0;padding-top:0"><b>Status.</b> Shipped. Each roster entry carries its similarity components, capability evidence and the marginal terms behind its selection.</p>
       <p class="dv"><b>Deliverable.</b> A casting assistant that recommends a balanced portfolio rather than a leaderboard.</p>
     </article>
 
     <article class="week">
-      <header><span class="wk">Week 4</span><h4>Validation and campaign reporting</h4><span class="badge plan">Planned</span></header>
+      <header><span class="wk">Week 4</span><h4>Validation and campaign reporting</h4><span class="badge plan">In progress</span></header>
       <ul>
         <li>Compare model and blind human rankings using Spearman correlation</li>
         <li>Measure score stability across repeated model runs</li>
@@ -303,6 +306,7 @@ footer a{color:var(--muted)}
         <li>Export a report: recommended roster, score breakdowns, evidence, audience coverage, risks and alternatives</li>
         <li>Document API quota and cost requirements</li>
       </ul>
+      <p class="dv" style="border-top:0;padding-top:0"><b>Status.</b> Reports, repeat-run stability checks and read-only diagnostics are built. Rank correlation is coded and waiting on a blind human ranking, which cannot be generated from the tool's own output.</p>
       <p class="dv"><b>Deliverable.</b> A tested, transparent prototype that can carry a real campaign-planning conversation.</p>
     </article>
   </div>
