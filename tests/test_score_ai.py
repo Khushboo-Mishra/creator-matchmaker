@@ -62,14 +62,14 @@ def model_payload(dimensions=None):
         }
     )
     return {
-    "candidates": [
-        {
-            "content": {
-                "parts": [{"text": json.dumps(body)}]
+        "candidates": [
+            {
+                "content": {
+                    "parts": [{"text": json.dumps(body)}]
+                }
             }
-        }
-    ]
-}
+        ]
+    }
 
 
 @pytest.fixture(autouse=True)

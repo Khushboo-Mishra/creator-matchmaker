@@ -1,0 +1,26 @@
+{
+  "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
+  "exports": [
+    {
+      "file": "REPLACE_WITH_YOUR_CSV.csv",
+      "topic": "storyboarding",
+      "geo": "US",
+      "window": "REPLACE_WITH_ACTUAL_EXPORT_RANGE",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=storyboarding"
+    },
+    {
+      "file": "REPLACE_WITH_YOUR_CSV.csv",
+      "topic": "moodboarding",
+      "geo": "US",
+      "window": "REPLACE_WITH_ACTUAL_EXPORT_RANGE",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=moodboarding"
+    },
+    {
+      "file": "REPLACE_WITH_YOUR_CSV.csv",
+      "topic": "creative planning",
+      "geo": "US",
+      "window": "REPLACE_WITH_ACTUAL_EXPORT_RANGE",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=creative%20planning"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 from src.campaign import Campaign
 from src.evaluation import evaluate
 from src.providers import DemoProvider, LiveProvider
-from src.judgment_contract import JUDGMENT_SCHEMA, validate_judgment, schema_for_trends
+from src.judgment_contract import JUDGMENT_SCHEMA, validate_judgment
 from src import providers, failure_diagnostics
 
 

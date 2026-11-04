@@ -7,7 +7,6 @@ import pytest
 
 from src.campaign import Campaign
 from src.discover import main as discover_main
-from src.discovery_file import validate_discovery
 from src.diagnose import diagnose, main as diagnose_main
 from src.pipeline import run
 from src.providers import DemoProvider

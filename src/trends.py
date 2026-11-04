@@ -91,7 +91,7 @@ def import_exports(manifest, base, before=None):
         if not rows[header][1].casefold().startswith(item["topic"].casefold() + ":"):
             raise ValueError("Manifest topic does not match the CSV topic header")
         series = []
-        for row in rows[header + 1 :]:
+        for row in rows[header + 1:]:
             if not row:
                 continue
             datetime.fromisoformat(row[0] + "-01" if len(row[0]) == 7 else row[0])

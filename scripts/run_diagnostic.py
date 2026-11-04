@@ -9,8 +9,8 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.config import GEMINI_API_KEY, YOUTUBE_API_KEY
-from src.matchmaker import main
+from src.config import GEMINI_API_KEY, YOUTUBE_API_KEY  # noqa: E402
+from src.matchmaker import main  # noqa: E402
 
 
 def http_details(exc, secrets=()):

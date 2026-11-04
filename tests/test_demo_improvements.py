@@ -6,7 +6,6 @@ import pytest
 
 from scripts.export_web import web_payload, js_json, export
 from src.campaign import Campaign, CAPABILITIES
-from src.matchmaker import load_trends
 from src.pipeline import run
 from src.providers import DemoProvider
 from src.evaluation import valid_trends
