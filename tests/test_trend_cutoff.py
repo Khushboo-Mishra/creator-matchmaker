@@ -89,3 +89,57 @@ def test_cli_cutoff_and_no_overwrite(files):
     assert json.loads(output.read_text())["filter"]["before"] == "2026-10-25"
     with pytest.raises(FileExistsError):
         main(args)
+
+
+def test_accepts_current_google_trends_export_format(tmp_path):
+    """The live export writes "Time" and a bare topic, not "Week" and
+    "topic: (United States)". Both shapes must import; this is the one
+    that actually comes out of trends.google.com today."""
+    csv_text = (
+        '"Time","mood board"\n'
+        '"2025-11-02",80\n'
+        '"2025-11-09",78\n'
+        '"2025-11-16",84\n'
+        '"2025-11-23",64\n'
+        '"2025-11-30",95\n'
+        '"2025-12-07",98\n'
+    )
+    (tmp_path / "t.csv").write_text(csv_text, encoding="utf-8")
+    manifest = {
+        "campaign_fingerprint": "f" * 64,
+        "exports": [{
+            "file": "t.csv",
+            "topic": "mood board",
+            "geo": "US",
+            "window": "2025-11-02 to 2025-12-07",
+            "source_url": "https://trends.google.com/trends/explore?geo=US&q=mood%20board",
+        }],
+    }
+    result = import_exports(manifest, tmp_path)
+    assert result["checked_topics"][0]["topic"] == "mood board"
+    assert len(result["checked_topics"][0]["series"]) == 6
+    assert result["trends"], "a rising second half must be detected"
+
+
+def test_rejects_topic_that_does_not_match_the_bare_header(tmp_path):
+    (tmp_path / "t.csv").write_text(
+        '"Time","mood board"\n"2025-11-02",1\n"2025-11-09",2\n'
+        '"2025-11-16",3\n"2025-11-23",4\n',
+        encoding="utf-8",
+    )
+    manifest = {
+        "campaign_fingerprint": "f" * 64,
+        "exports": [{
+            "file": "t.csv",
+            "topic": "storyboard",
+            "geo": "US",
+            "window": "w",
+            "source_url": "https://trends.google.com/trends/explore?geo=US&q=storyboard",
+        }],
+    }
+    try:
+        import_exports(manifest, tmp_path)
+    except ValueError as exc:
+        assert "does not match" in str(exc)
+    else:
+        raise AssertionError("mismatched topic must be rejected")

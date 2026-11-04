@@ -80,7 +80,7 @@ def import_exports(manifest, base, before=None):
             (
                 i
                 for i, row in enumerate(rows)
-                if row and row[0] in {"Day", "Week", "Month"}
+                if row and row[0] in {"Day", "Week", "Month", "Time"}
             ),
             None,
         )
@@ -88,7 +88,14 @@ def import_exports(manifest, base, before=None):
             raise ValueError(
                 "Use an English Google Trends interest-over-time CSV with one topic"
             )
-        if not rows[header][1].casefold().startswith(item["topic"].casefold() + ":"):
+        # Google Trends exports have carried two header shapes: the older
+        # "topic: (United States)", which names the geo inline, and the
+        # current "topic", which puts the geo in the filename instead.
+        # Accept both. The manifest still declares geo, and export_sha256
+        # below binds the record to these exact bytes either way.
+        column = rows[header][1].casefold().strip()
+        topic = item["topic"].casefold().strip()
+        if column != topic and not column.startswith(topic + ":"):
             raise ValueError("Manifest topic does not match the CSV topic header")
         series = []
         for row in rows[header + 1:]:
