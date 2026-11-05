@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 
 import requests
+from .request_limits import EmbeddingPacer, retry_delay
 
 from .config import (
     GEMINI_API_KEY,
@@ -36,6 +37,7 @@ EMBEDDING_ENDPOINT = (
 )
 
 RETRY_DELAYS = (2, 4, 8)
+_embedding_pacer = EmbeddingPacer()
 
 
 class TrendGroundingError(RuntimeError):
@@ -43,14 +45,19 @@ class TrendGroundingError(RuntimeError):
 
 
 def _post_with_retry(**kwargs):
-    """requests.post that retries 429/5xx up to three times with 2s/4s/8s backoff."""
-    for attempt, delay in enumerate((0,) + RETRY_DELAYS):
-        if delay:
-            time.sleep(delay)
+    """Pace embedding attempts and retry transient errors with server guidance."""
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        if kwargs.get("url", "").endswith(":embedContent"):
+            _embedding_pacer.wait()
         r = requests.post(**kwargs)
-        if r.status_code == 429 or r.status_code >= 500:
-            continue
-        return r
+        if not (r.status_code == 429 or r.status_code >= 500):
+            return r
+        if attempt == len(RETRY_DELAYS):
+            return r
+        delay = retry_delay(r, RETRY_DELAYS[attempt])
+        if delay is None:
+            return r
+        time.sleep(delay)
     return r
 
 MODEL_DIMS = MODEL_DIMENSIONS

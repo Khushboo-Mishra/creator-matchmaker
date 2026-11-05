@@ -1,4 +1,16 @@
-"""Write data/trend_snapshot.json from text a human gathered, with no API call.
+"""DEPRECATED. Superseded by src/trends.py; not usable with the locked pipeline.
+
+This wrote a free-text trend snapshot when Google Search grounding was
+quota-blocked. The locked pipeline verifies trends instead: operator-supplied
+official Google Trends CSVs, imported by `python -m src.trends import`, where
+only a measured rise becomes a trend match. Live mode rejects what this writes,
+by design. Kept only so older saved runs remain readable.
+
+See docs/LIVE_RUN.md section 2.
+
+Original documentation follows.
+
+Write data/trend_snapshot.json from text a human gathered, with no API call.
 
 Why this exists: Google Search grounding needs billing enabled, and on the free
 tier refresh_trends fails. But score_ai only calls Google when the snapshot on

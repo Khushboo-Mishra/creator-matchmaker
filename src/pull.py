@@ -140,9 +140,9 @@ def video_details(video_ids):
                 "title": item["snippet"]["title"],
                 "description": item["snippet"].get("description", ""),
                 "published_at": item["snippet"]["publishedAt"],
-                "views": int(stats.get("viewCount", 0)),
-                "likes": int(stats.get("likeCount", 0)),
-                "comments": int(stats.get("commentCount", 0)),
+                "views": int(stats["viewCount"]) if "viewCount" in stats else None,
+                "likes": int(stats["likeCount"]) if "likeCount" in stats else None,
+                "comments": int(stats["commentCount"]) if "commentCount" in stats else None,
                 "url": f"https://www.youtube.com/watch?v={item['id']}",
             }
         )
@@ -151,7 +151,7 @@ def video_details(video_ids):
 
 def sample_comments(videos, n_videos=COMMENT_VIDEOS, per_video=COMMENTS_PER_VIDEO):
     """Top-level comments from the highest-view videos. 1 unit per video."""
-    top = sorted(videos, key=lambda v: v["views"], reverse=True)[:n_videos]
+    top = sorted(videos, key=lambda v: v["views"] or 0, reverse=True)[:n_videos]
     out = []
     for v in top:
         try:

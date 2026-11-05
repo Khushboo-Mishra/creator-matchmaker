@@ -1,0 +1,326 @@
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+from jsonschema import Draft202012Validator
+
+from src.campaign import Campaign
+from src.evaluation import evaluate
+from src.providers import DemoProvider, LiveProvider
+from src.judgment_contract import JUDGMENT_SCHEMA, validate_judgment
+from src import providers, failure_diagnostics
+
+
+@pytest.fixture
+def context():
+    campaign = Campaign(**json.loads(Path("examples/campaign.json").read_text()))
+    provider = DemoProvider(datetime(2026, 10, 26, tzinfo=timezone.utc))
+    channel = provider.channel(provider.discover(campaign)["candidates"][1])
+    channel["comment_records"] = provider.comments(channel)
+    metadata = [
+        {"video_id": v["video_id"], "text": v["title"] + " " + v["description"]}
+        for v in channel["videos"][:15]
+    ]
+    result = provider.judge(campaign, metadata, channel["comment_records"], None)
+    return campaign, provider, channel, result
+
+
+@pytest.mark.parametrize(
+    "value", [8, -0.1, "0.8", None, True, float("nan"), float("inf")]
+)
+def test_invalid_unit_reports_field_and_creator_and_saves(
+    context, tmp_path, monkeypatch, value
+):
+    campaign, provider, channel, result = context
+    provider.mode = "live"
+    result["audience"]["score"] = value
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+    monkeypatch.setattr(failure_diagnostics, "DATA", tmp_path)
+    with pytest.raises(
+        ValueError, match=r"Creator @demo1: judgment.audience.score"
+    ) as error:
+        evaluate(channel, campaign, provider, None)
+    assert "Private diagnostics saved:" in str(error.value)
+    artifact = json.loads(next((tmp_path / "diagnostics").glob("*.json")).read_text())
+    assert artifact["channel"]["channel_id"] == channel["channel_id"]
+    assert artifact["kind"] == "failed_evaluation_not_resumable"
+    assert "judgment" in artifact
+
+
+def test_contract_all_score_fields_and_boundaries(context):
+    *_, result = context
+    Draft202012Validator.check_schema(JUDGMENT_SCHEMA)
+    for section, key in [
+        ("audience", "score"),
+        ("brand_fit", "score"),
+        ("capabilities", "expertise"),
+    ]:
+        original = result[section][key]
+        for value in (0, 1):
+            result[section][key] = value
+            validate_judgment(result)
+        result[section][key] = 9
+        with pytest.raises(ValueError, match=section + "." + key):
+            validate_judgment(result)
+        result[section][key] = original
+    result["trend_matches"] = [
+        {
+            "topic": "x",
+            "campaign_relevance": 0.8,
+            "creator_proximity": 2,
+            "video_ids": ["v"],
+        }
+    ]
+    with pytest.raises(ValueError, match=r"trend_matches\[0\].creator_proximity"):
+        validate_judgment(result)
+
+
+def test_missing_fields_and_shapes(context):
+    *_, result = context
+    del result["audience"]["score"]
+    with pytest.raises(ValueError, match="required"):
+        validate_judgment(result)
+    with pytest.raises(ValueError):
+        validate_judgment([])
+
+
+def test_diagnostic_write_error_preserves_original_failure(context, monkeypatch):
+    campaign, provider, channel, result = context
+    provider.mode = "live"
+    result["brand_fit"]["score"] = 10
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+
+    def unavailable(*args):
+        raise OSError("disk unavailable")
+
+    monkeypatch.setattr(failure_diagnostics, "save_failure", unavailable)
+    with pytest.raises(
+        ValueError, match="brand_fit.score.*Diagnostics could not be saved"
+    ):
+        evaluate(channel, campaign, provider, None)
+
+
+@pytest.mark.parametrize(
+    "text,finish", [("not JSON", "STOP"), ('{"partial":', "MAX_TOKENS")]
+)
+def test_live_raw_failure_saved_without_headers(
+    context, tmp_path, monkeypatch, text, finish
+):
+    campaign, demo, channel, _ = context
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "secret-test-key")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "secret-test-key")
+    monkeypatch.setattr(failure_diagnostics, "DATA", tmp_path)
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [
+                    {"finishReason": finish, "content": {"parts": [{"text": text}]}}
+                ]
+            }
+
+    calls = []
+
+    def post(**kwargs):
+        calls.append(kwargs)
+        return Response()
+
+    monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
+    provider = LiveProvider()
+    monkeypatch.setattr(provider, "embed", demo.embed)
+    with pytest.raises(ValueError, match="Creator @demo1: judgment response"):
+        evaluate(channel, campaign, provider, None)
+    assert len(calls) == 1  # No hidden paid repair loop.
+    assert (
+        calls[0]["json"]["generationConfig"]["responseJsonSchema"]["properties"][
+            "trend_matches"
+        ]["maxItems"]
+        == 0
+    )
+    saved = next((tmp_path / "diagnostics").glob("*.json")).read_text()
+    assert "secret-test-key" not in saved
+    assert json.loads(saved)["response_text"] == text
+
+
+def test_valid_evaluation_does_not_write_diagnostics(context, tmp_path, monkeypatch):
+    campaign, provider, channel, _ = context
+    provider.mode = "live"
+    monkeypatch.setattr(failure_diagnostics, "DATA", tmp_path)
+    evaluate(channel, campaign, provider, None)
+    assert not (tmp_path / "diagnostics").exists()
+
+
+@pytest.mark.parametrize("unknown", [False, True])
+def test_audience_ids_resolve_verbatim_or_reject(context, monkeypatch, unknown):
+    campaign, _, _, result = context
+    result["capabilities"]["demonstration_video_ids"] = []
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = []
+    comment = {
+        "comment_id": "original",
+        "video_id": "v",
+        "text": "im an digital artist i  love\nconcept art ❤️",
+    }
+    result["audience"]["quotes"] = [
+        {"comment_id": "missing" if unknown else "original"}
+    ] * 2
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    monkeypatch.setattr(
+        providers.score_ai, "_post_with_retry", lambda **kwargs: Response()
+    )
+    if unknown:
+        with pytest.raises(ValueError, match="comment_id.*enum"):
+            LiveProvider().judge(campaign, [], [comment], None)
+    else:
+        resolved = LiveProvider().judge(campaign, [], [comment], None)
+        assert resolved["audience"]["quotes"] == [
+            {"comment_id": "original", "video_id": "v", "quote": comment["text"]}
+        ]
+
+
+@pytest.mark.parametrize("topics", [[], [{"topic": "planning"}]])
+def test_request_excludes_checked_topics_and_bounds_matches(
+    context, monkeypatch, topics
+):
+    campaign, _, _, result = context
+    result["audience"]["quotes"] = []
+    result["capabilities"]["demonstration_video_ids"] = []
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = []
+    snapshot = {
+        "source": "Google Trends",
+        "fetched_at": "2026-10-26T00:00:00+00:00",
+        "trends": topics,
+        "checked_topics": [{"topic": "not-rising-secret-marker"}],
+    }
+    original = json.dumps(snapshot, sort_keys=True)
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    def post(**kwargs):
+        calls.append(kwargs)
+        return Response()
+
+    monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
+    LiveProvider().judge(campaign, [], [], snapshot)
+    prompt = calls[0]["json"]["contents"][0]["parts"][0]["text"]
+    assert "not-rising-secret-marker" not in prompt
+    data = json.loads(prompt.split("\nDATA\n")[1])
+    assert data["trends"]["trends"] == topics
+    assert "checked_topics" not in data["trends"]
+    schema = calls[0]["json"]["generationConfig"]["responseJsonSchema"]
+    bounds = schema["properties"]["trend_matches"]
+    if topics:
+        assert bounds["items"]["properties"]["topic"]["enum"] == ["planning"]
+    else:
+        assert bounds["maxItems"] == 0
+    assert json.dumps(snapshot, sort_keys=True) == original
+    assert "maxItems" not in JUDGMENT_SCHEMA["properties"]["trend_matches"]
+
+
+def test_live_metadata_selection_passes_exact_source_validation(context, monkeypatch):
+    campaign, demo, channel, result = context
+    result["audience"]["quotes"] = [
+        {"comment_id": c["comment_id"]} for c in channel["comment_records"][:2]
+    ]
+    for section in ("brand_fit", "safety", "capabilities"):
+        result[section]["evidence"] = [{"passage_id": "m0-l0"}]
+    monkeypatch.setattr(providers, "GEMINI_API_KEY", "test")
+    monkeypatch.setattr(providers, "YOUTUBE_API_KEY", "test")
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]
+            }
+
+    def post(**kwargs):
+        calls.append(kwargs)
+        return Response()
+
+    monkeypatch.setattr(providers.score_ai, "_post_with_retry", post)
+    provider = LiveProvider()
+    monkeypatch.setattr(provider, "embed", demo.embed)
+    analysis = evaluate(channel, campaign, provider, None)
+    source = channel["videos"][0]
+    assert (
+        analysis["capability_evidence"][0]["quote"]
+        == (source["title"] + " " + source["description"]).splitlines()[0]
+    )
+    data = json.loads(
+        calls[0]["json"]["contents"][0]["parts"][0]["text"].split("\nDATA\n")[1]
+    )
+    assert data["metadata_passages"][0]["passage_id"] == "m0-l0"
+
+
+@pytest.mark.parametrize(
+    "snapshot", [None, {"trends": [], "checked_topics": [{"topic": "storyboard"}]}]
+)
+def test_nonrising_match_still_rejected_locally(context, monkeypatch, snapshot):
+    campaign, provider, channel, result = context
+    result["trend_matches"] = [
+        {
+            "topic": "storyboard",
+            "campaign_relevance": 0.9,
+            "creator_proximity": 0.8,
+            "video_ids": [channel["videos"][0]["video_id"]],
+        }
+    ]
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+    with pytest.raises(ValueError, match="trend_matches.*maxItems"):
+        evaluate(channel, campaign, provider, snapshot)
+
+
+def test_known_topic_only_and_video_provenance_still_required(context, monkeypatch):
+    campaign, provider, channel, result = context
+    snapshot = {
+        "trends": [{"topic": "planning"}],
+        "fetched_at": "2026-10-26T00:00:00+00:00",
+    }
+    result["trend_matches"] = [
+        {
+            "topic": "other",
+            "campaign_relevance": 0.9,
+            "creator_proximity": 0.8,
+            "video_ids": ["invented"],
+        }
+    ]
+    monkeypatch.setattr(provider, "judge", lambda *args: result)
+    with pytest.raises(ValueError, match="enum"):
+        evaluate(channel, campaign, provider, snapshot)
+    result["trend_matches"][0]["topic"] = "planning"
+    with pytest.raises(ValueError, match="supplied videos"):
+        evaluate(channel, campaign, provider, snapshot)
+    result["trend_matches"][0]["video_ids"] = [channel["videos"][0]["video_id"]]
+    assert evaluate(channel, campaign, provider, snapshot)["dimensions"]["trend_fit"][
+        "score"
+    ] == pytest.approx(0.72)

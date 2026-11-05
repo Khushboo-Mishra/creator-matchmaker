@@ -1,0 +1,35 @@
+# BLIND RANKING WORKSHEET - fill this in, then this file becomes the real input.
+#
+# Task: reorder the ten handles below, BEST FIRST, for the Milanote campaign
+# described in config/rules.md. Judge them however a strategist would.
+#
+# Rules that make the number mean anything:
+#   - Do NOT open data/scores/ or the web demo before you finish.
+#   - Do NOT let someone who has seen the tool's output do this.
+#   - Ranking by eye from the channels themselves is the point.
+#
+# Context below is only what a human would see on YouTube: name and size.
+# Delete these comment lines or leave them; lines starting with # are ignored.
+#
+# @justinpetn                  Justin P. Etienne                             5,940 subscribers
+# @thinkmediatv                Think Media                               3,520,000 subscribers
+# @anikjaindesign              Anik Jain                                   190,000 subscribers
+# @filmcourage                 Film Courage                                802,000 subscribers
+# @bandh                       B&H Photo Video Pro Audio                 1,020,000 subscribers
+# @katesbookdate               Katesbookdate                                35,300 subscribers
+# @indiegameclinic             Indie Game Clinic                            52,100 subscribers
+# @ulaburgiel1                 Ula Burgiel                                  81,100 subscribers
+# @torunnkjolberg2221          Torunn Kjolberg                                 582 subscribers
+# @abiconnick                  Abi Connick                                 436,000 subscribers
+#
+# --- your ranking, best first, one handle per line ---
+@justinpetn
+@thinkmediatv
+@anikjaindesign
+@filmcourage
+@bandh
+@katesbookdate
+@indiegameclinic
+@ulaburgiel1
+@torunnkjolberg2221
+@abiconnick

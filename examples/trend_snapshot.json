@@ -1,0 +1,27 @@
+{
+  "source": "Synthetic demo fixture",
+  "synthetic": true,
+  "fetched_at": "2026-10-25T00:00:00+00:00",
+  "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
+  "verification_method": "Invented test values. URLs identify example searches, not evidence of observed rises.",
+  "trends": [
+    {
+      "topic": "storyboarding",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=storyboarding",
+      "geo": "US", "window": "2026-07-25 to 2026-10-24 (synthetic)",
+      "previous_interest": 35, "recent_interest": 60
+    },
+    {
+      "topic": "moodboarding",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=moodboarding",
+      "geo": "US", "window": "2026-07-25 to 2026-10-24 (synthetic)",
+      "previous_interest": 25, "recent_interest": 50
+    },
+    {
+      "topic": "creative planning",
+      "source_url": "https://trends.google.com/trends/explore?geo=US&q=creative%20planning",
+      "geo": "US", "window": "2026-07-25 to 2026-10-24 (synthetic)",
+      "previous_interest": 30, "recent_interest": 45
+    }
+  ]
+}

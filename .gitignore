@@ -15,6 +15,10 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.local-deps/
+data/runs/
+data/diagnostics/
+data/checkpoints/
 
 # node
 node_modules/
@@ -25,3 +29,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# legacy free-text trend snapshot (src/seed_trends.py, superseded by
+# src/trends.py). The verified pipeline uses data/trends_live.json.
+data/trend_snapshot.json

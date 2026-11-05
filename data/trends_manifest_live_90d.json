@@ -1,0 +1,33 @@
+{
+  "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
+  "exports": [
+    {
+      "file": "trends_creative_brief_90d.csv",
+      "topic": "creative brief",
+      "geo": "US",
+      "window": "2026-08-04 to 2026-11-04",
+      "source_url": "https://trends.google.com/trends/explore?date=today%203-m&geo=US&q=creative%20brief"
+    },
+    {
+      "file": "trends_mood_board_90d.csv",
+      "topic": "mood board",
+      "geo": "US",
+      "window": "2026-08-04 to 2026-11-04",
+      "source_url": "https://trends.google.com/trends/explore?date=today%203-m&geo=US&q=mood%20board"
+    },
+    {
+      "file": "trends_shot_list_90d.csv",
+      "topic": "shot list",
+      "geo": "US",
+      "window": "2026-08-04 to 2026-11-04",
+      "source_url": "https://trends.google.com/trends/explore?date=today%203-m&geo=US&q=shot%20list"
+    },
+    {
+      "file": "trends_storyboard_90d.csv",
+      "topic": "storyboard",
+      "geo": "US",
+      "window": "2026-08-04 to 2026-11-04",
+      "source_url": "https://trends.google.com/trends/explore?date=today%203-m&geo=US&q=storyboard"
+    }
+  ]
+}
