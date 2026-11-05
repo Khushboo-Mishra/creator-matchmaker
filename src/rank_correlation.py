@@ -65,9 +65,41 @@ def tool_ranking(weights=None):
     return [handle for handle, _ in ranked]
 
 
+def parse_blind_ranking(lines):
+    """Return the human ranking (best first) from worksheet lines, or raise.
+
+    Lines starting with # are worksheet context. A ranking that is empty, has
+    duplicates, or repeats the worksheet's own listed order is not a human
+    ranking and must not be correlated against the tool.
+    """
+    ranking, worksheet_order = [], []
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            first = line.lstrip("#").split()
+            if first and first[0].startswith("@"):
+                worksheet_order.append(first[0])
+            continue
+        ranking.append(line.split()[0])
+    if not ranking:
+        raise ValueError(
+            "Blind ranking is empty: a person who has not seen the tool's "
+            "output must fill it in, best first, one handle per line"
+        )
+    duplicates = sorted({h for h in ranking if ranking.count(h) > 1})
+    if duplicates:
+        raise ValueError(f"Blind ranking repeats handles: {duplicates}")
+    if worksheet_order and ranking == worksheet_order:
+        raise ValueError(
+            "Ranking matches the unranked worksheet order; this is not a human ranking"
+        )
+    return ranking
+
+
 def _read_ranking_file(path):
-    lines = path.read_text().splitlines()
-    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+    return parse_blind_ranking(path.read_text(encoding="utf-8").splitlines())
 
 
 def main():
