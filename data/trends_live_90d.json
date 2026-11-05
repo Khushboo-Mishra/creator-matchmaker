@@ -1,10 +1,10 @@
 {
   "source": "Google Trends",
-  "fetched_at": "2026-11-05T16:04:47.940002+00:00",
+  "fetched_at": "2026-11-05T16:07:10.060365+00:00",
   "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean by at least min_lift",
   "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
   "filter": {
-    "before": null,
+    "before": "2026-11-04",
     "rule": "Retain only periods whose start date is strictly before the cutoff; no automatic partial-period detection"
   },
   "checked_topics": [
@@ -382,19 +382,17 @@
         {
           "date": "2026-11-03",
           "value": 30.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 25.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 17.847826086956523,
-      "recent_interest": 16.29787234042553,
+      "recent_interest": 16.108695652173914,
       "min_lift": 0.05
     },
     {
@@ -771,19 +769,17 @@
         {
           "date": "2026-11-03",
           "value": 47.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 38.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 48.84782608695652,
-      "recent_interest": 49.191489361702125,
+      "recent_interest": 49.43478260869565,
       "min_lift": 0.05
     },
     {
@@ -1160,19 +1156,17 @@
         {
           "date": "2026-11-03",
           "value": 72.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 63.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 71.73913043478261,
-      "recent_interest": 75.97872340425532,
+      "recent_interest": 76.26086956521739,
       "min_lift": 0.05
     },
     {
@@ -1549,19 +1543,17 @@
         {
           "date": "2026-11-03",
           "value": 69.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 49.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 59.41304347826087,
-      "recent_interest": 70.02127659574468,
+      "recent_interest": 70.47826086956522,
       "min_lift": 0.05
     }
   ],
@@ -1940,19 +1932,17 @@
         {
           "date": "2026-11-03",
           "value": 72.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 63.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 71.73913043478261,
-      "recent_interest": 75.97872340425532,
+      "recent_interest": 76.26086956521739,
       "min_lift": 0.05
     },
     {
@@ -2329,19 +2319,17 @@
         {
           "date": "2026-11-03",
           "value": 69.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 49.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-04"
+      ],
       "retained_period_start_range": {
         "first": "2026-08-04",
-        "last": "2026-11-04"
+        "last": "2026-11-03"
       },
       "previous_interest": 59.41304347826087,
-      "recent_interest": 70.02127659574468,
+      "recent_interest": 70.47826086956522,
       "min_lift": 0.05
     }
   ]
