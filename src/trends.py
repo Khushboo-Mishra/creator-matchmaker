@@ -18,6 +18,8 @@ from .campaign import Campaign
 from .config import GEMINI_API_KEY, GEMINI_MODEL
 from . import score_ai
 
+MIN_LIFT = 0.05  # pre-registered 2026-11-05: recent half must beat previous half by >= 5%
+
 
 def propose(campaign):
     if not GEMINI_API_KEY:
@@ -145,15 +147,16 @@ def import_exports(manifest, base, before=None):
             "previous_interest": previous,
             "recent_interest": recent,
         }
+        record["min_lift"] = MIN_LIFT
         records.append(record)
-        if recent > previous:
+        if previous > 0 and (recent - previous) / previous >= MIN_LIFT:
             rising.append(record)
     if not records:
         raise ValueError("At least one official export is required")
     return {
         "source": "Google Trends",
         "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean",
+        "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean by at least min_lift",
         "campaign_fingerprint": manifest["campaign_fingerprint"],
         "filter": {
             "before": before,
