@@ -1,7 +1,7 @@
 {
   "source": "Google Trends",
-  "fetched_at": "2026-11-04T14:52:30.233381+00:00",
-  "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean",
+  "fetched_at": "2026-11-05T16:04:47.940002+00:00",
+  "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean by at least min_lift",
   "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
   "filter": {
     "before": null,
@@ -394,7 +394,8 @@
         "last": "2026-11-04"
       },
       "previous_interest": 17.847826086956523,
-      "recent_interest": 16.29787234042553
+      "recent_interest": 16.29787234042553,
+      "min_lift": 0.05
     },
     {
       "topic": "mood board",
@@ -782,7 +783,8 @@
         "last": "2026-11-04"
       },
       "previous_interest": 48.84782608695652,
-      "recent_interest": 49.191489361702125
+      "recent_interest": 49.191489361702125,
+      "min_lift": 0.05
     },
     {
       "topic": "shot list",
@@ -1170,7 +1172,8 @@
         "last": "2026-11-04"
       },
       "previous_interest": 71.73913043478261,
-      "recent_interest": 75.97872340425532
+      "recent_interest": 75.97872340425532,
+      "min_lift": 0.05
     },
     {
       "topic": "storyboard",
@@ -1558,399 +1561,12 @@
         "last": "2026-11-04"
       },
       "previous_interest": 59.41304347826087,
-      "recent_interest": 70.02127659574468
+      "recent_interest": 70.02127659574468,
+      "min_lift": 0.05
     }
   ],
   "trends": [
     {
-      "topic": "mood board",
-      "geo": "US",
-      "window": "2026-08-04 to 2026-11-04",
-      "source_url": "https://trends.google.com/trends/explore?date=today%203-m&geo=US&q=mood%20board",
-      "export_sha256": "913c29fa9405c25d94ac9b96c830736fb6e059a2d23ab2f056988834c6da2d24",
-      "series": [
-        {
-          "date": "2026-08-04",
-          "value": 43.0
-        },
-        {
-          "date": "2026-08-05",
-          "value": 35.0
-        },
-        {
-          "date": "2026-08-06",
-          "value": 36.0
-        },
-        {
-          "date": "2026-08-07",
-          "value": 44.0
-        },
-        {
-          "date": "2026-08-08",
-          "value": 0.0
-        },
-        {
-          "date": "2026-08-09",
-          "value": 35.0
-        },
-        {
-          "date": "2026-08-10",
-          "value": 56.0
-        },
-        {
-          "date": "2026-08-11",
-          "value": 47.0
-        },
-        {
-          "date": "2026-08-12",
-          "value": 51.0
-        },
-        {
-          "date": "2026-08-13",
-          "value": 56.0
-        },
-        {
-          "date": "2026-08-14",
-          "value": 47.0
-        },
-        {
-          "date": "2026-08-15",
-          "value": 43.0
-        },
-        {
-          "date": "2026-08-16",
-          "value": 45.0
-        },
-        {
-          "date": "2026-08-17",
-          "value": 59.0
-        },
-        {
-          "date": "2026-08-18",
-          "value": 37.0
-        },
-        {
-          "date": "2026-08-19",
-          "value": 58.0
-        },
-        {
-          "date": "2026-08-20",
-          "value": 43.0
-        },
-        {
-          "date": "2026-08-21",
-          "value": 42.0
-        },
-        {
-          "date": "2026-08-22",
-          "value": 53.0
-        },
-        {
-          "date": "2026-08-23",
-          "value": 42.0
-        },
-        {
-          "date": "2026-08-24",
-          "value": 62.0
-        },
-        {
-          "date": "2026-08-25",
-          "value": 46.0
-        },
-        {
-          "date": "2026-08-26",
-          "value": 75.0
-        },
-        {
-          "date": "2026-08-27",
-          "value": 67.0
-        },
-        {
-          "date": "2026-08-28",
-          "value": 49.0
-        },
-        {
-          "date": "2026-08-29",
-          "value": 38.0
-        },
-        {
-          "date": "2026-08-30",
-          "value": 29.0
-        },
-        {
-          "date": "2026-08-31",
-          "value": 55.0
-        },
-        {
-          "date": "2026-09-01",
-          "value": 72.0
-        },
-        {
-          "date": "2026-09-02",
-          "value": 59.0
-        },
-        {
-          "date": "2026-09-03",
-          "value": 59.0
-        },
-        {
-          "date": "2026-09-04",
-          "value": 48.0
-        },
-        {
-          "date": "2026-09-05",
-          "value": 38.0
-        },
-        {
-          "date": "2026-09-06",
-          "value": 29.0
-        },
-        {
-          "date": "2026-09-07",
-          "value": 43.0
-        },
-        {
-          "date": "2026-09-08",
-          "value": 52.0
-        },
-        {
-          "date": "2026-09-09",
-          "value": 59.0
-        },
-        {
-          "date": "2026-09-10",
-          "value": 62.0
-        },
-        {
-          "date": "2026-09-11",
-          "value": 60.0
-        },
-        {
-          "date": "2026-09-12",
-          "value": 24.0
-        },
-        {
-          "date": "2026-09-13",
-          "value": 44.0
-        },
-        {
-          "date": "2026-09-14",
-          "value": 70.0
-        },
-        {
-          "date": "2026-09-15",
-          "value": 61.0
-        },
-        {
-          "date": "2026-09-16",
-          "value": 68.0
-        },
-        {
-          "date": "2026-09-17",
-          "value": 45.0
-        },
-        {
-          "date": "2026-09-18",
-          "value": 61.0
-        },
-        {
-          "date": "2026-09-19",
-          "value": 0.0
-        },
-        {
-          "date": "2026-09-20",
-          "value": 0.0
-        },
-        {
-          "date": "2026-09-21",
-          "value": 100.0
-        },
-        {
-          "date": "2026-09-22",
-          "value": 80.0
-        },
-        {
-          "date": "2026-09-23",
-          "value": 71.0
-        },
-        {
-          "date": "2026-09-24",
-          "value": 47.0
-        },
-        {
-          "date": "2026-09-25",
-          "value": 56.0
-        },
-        {
-          "date": "2026-09-26",
-          "value": 37.0
-        },
-        {
-          "date": "2026-09-27",
-          "value": 41.0
-        },
-        {
-          "date": "2026-09-28",
-          "value": 62.0
-        },
-        {
-          "date": "2026-09-29",
-          "value": 56.0
-        },
-        {
-          "date": "2026-09-30",
-          "value": 66.0
-        },
-        {
-          "date": "2026-10-01",
-          "value": 71.0
-        },
-        {
-          "date": "2026-10-02",
-          "value": 54.0
-        },
-        {
-          "date": "2026-10-03",
-          "value": 38.0
-        },
-        {
-          "date": "2026-10-04",
-          "value": 44.0
-        },
-        {
-          "date": "2026-10-05",
-          "value": 40.0
-        },
-        {
-          "date": "2026-10-06",
-          "value": 63.0
-        },
-        {
-          "date": "2026-10-07",
-          "value": 70.0
-        },
-        {
-          "date": "2026-10-08",
-          "value": 38.0
-        },
-        {
-          "date": "2026-10-09",
-          "value": 46.0
-        },
-        {
-          "date": "2026-10-10",
-          "value": 48.0
-        },
-        {
-          "date": "2026-10-11",
-          "value": 37.0
-        },
-        {
-          "date": "2026-10-12",
-          "value": 43.0
-        },
-        {
-          "date": "2026-10-13",
-          "value": 55.0
-        },
-        {
-          "date": "2026-10-14",
-          "value": 49.0
-        },
-        {
-          "date": "2026-10-15",
-          "value": 38.0
-        },
-        {
-          "date": "2026-10-16",
-          "value": 55.0
-        },
-        {
-          "date": "2026-10-17",
-          "value": 25.0
-        },
-        {
-          "date": "2026-10-18",
-          "value": 46.0
-        },
-        {
-          "date": "2026-10-19",
-          "value": 63.0
-        },
-        {
-          "date": "2026-10-20",
-          "value": 71.0
-        },
-        {
-          "date": "2026-10-21",
-          "value": 55.0
-        },
-        {
-          "date": "2026-10-22",
-          "value": 52.0
-        },
-        {
-          "date": "2026-10-23",
-          "value": 48.0
-        },
-        {
-          "date": "2026-10-24",
-          "value": 35.0
-        },
-        {
-          "date": "2026-10-25",
-          "value": 42.0
-        },
-        {
-          "date": "2026-10-26",
-          "value": 53.0
-        },
-        {
-          "date": "2026-10-27",
-          "value": 56.0
-        },
-        {
-          "date": "2026-10-28",
-          "value": 57.0
-        },
-        {
-          "date": "2026-10-29",
-          "value": 55.0
-        },
-        {
-          "date": "2026-10-30",
-          "value": 48.0
-        },
-        {
-          "date": "2026-10-31",
-          "value": 30.0
-        },
-        {
-          "date": "2026-11-01",
-          "value": 33.0
-        },
-        {
-          "date": "2026-11-02",
-          "value": 53.0
-        },
-        {
-          "date": "2026-11-03",
-          "value": 47.0
-        },
-        {
-          "date": "2026-11-04",
-          "value": 38.0
-        }
-      ],
-      "excluded_dates": [],
-      "retained_period_start_range": {
-        "first": "2026-08-04",
-        "last": "2026-11-04"
-      },
-      "previous_interest": 48.84782608695652,
-      "recent_interest": 49.191489361702125
-    },
-    {
       "topic": "shot list",
       "geo": "US",
       "window": "2026-08-04 to 2026-11-04",
@@ -2336,7 +1952,8 @@
         "last": "2026-11-04"
       },
       "previous_interest": 71.73913043478261,
-      "recent_interest": 75.97872340425532
+      "recent_interest": 75.97872340425532,
+      "min_lift": 0.05
     },
     {
       "topic": "storyboard",
@@ -2724,7 +2341,8 @@
         "last": "2026-11-04"
       },
       "previous_interest": 59.41304347826087,
-      "recent_interest": 70.02127659574468
+      "recent_interest": 70.02127659574468,
+      "min_lift": 0.05
     }
   ]
 }
