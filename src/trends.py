@@ -17,8 +17,7 @@ from urllib.parse import urlparse
 from .campaign import Campaign
 from .config import GEMINI_API_KEY, GEMINI_MODEL
 from . import score_ai
-
-MIN_LIFT = 0.05  # pre-registered 2026-11-05: recent half must beat previous half by >= 5%
+from .trend_rules import MIN_LIFT, meets_min_lift
 
 
 def propose(campaign):
@@ -148,9 +147,13 @@ def import_exports(manifest, base, before=None):
             "recent_interest": recent,
         }
         record["min_lift"] = MIN_LIFT
-        records.append(record)
-        if previous > 0 and (recent - previous) / previous >= MIN_LIFT:
+        if meets_min_lift(previous, recent):
             rising.append(record)
+        elif previous <= 0:
+            record["not_retained_reason"] = "zero baseline: lift is undefined"
+        else:
+            record["not_retained_reason"] = "lift below minimum"
+        records.append(record)
     if not records:
         raise ValueError("At least one official export is required")
     return {

@@ -9,7 +9,7 @@ from uuid import uuid4
 from .campaign import Campaign
 from .pipeline import run, revise, save, verify_snapshot, validate_run, model_stability
 from .providers import DemoProvider, LiveProvider
-from .rank_correlation import parse_blind_ranking
+from .rank_correlation import read_ranking_file
 from .reports import write_reports
 
 
@@ -90,8 +90,9 @@ def main(argv=None):
         snapshot = read(args.snapshot)
         verify_snapshot(snapshot)
         human = (
-            parse_blind_ranking(
-                Path(args.human_ranking).read_text(encoding="utf-8").splitlines()
+            read_ranking_file(
+                Path(args.human_ranking),
+                [c["handle"] for c in snapshot["ranking"]],
             )
             if args.human_ranking
             else None

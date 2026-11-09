@@ -143,3 +143,19 @@ def test_rejects_topic_that_does_not_match_the_bare_header(tmp_path):
         assert "does not match" in str(exc)
     else:
         raise AssertionError("mismatched topic must be rejected")
+
+
+def test_zero_baseline_topic_is_not_retained_and_says_why(files):
+    path, manifest = files
+    path.write_text("Week,planning: (United States)\n2026-09-27,0\n2026-10-04,0\n2026-10-11,20\n2026-10-18,30\n")
+    result = import_exports(manifest, path.parent)
+    assert result["trends"] == []
+    assert result["checked_topics"][0]["not_retained_reason"] == "zero baseline: lift is undefined"
+
+
+def test_sub_minimum_lift_topic_is_not_retained_and_says_why(files):
+    path, manifest = files
+    path.write_text("Week,planning: (United States)\n2026-09-27,50\n2026-10-04,50\n2026-10-11,51\n2026-10-18,51\n")
+    result = import_exports(manifest, path.parent)
+    assert result["trends"] == []
+    assert result["checked_topics"][0]["not_retained_reason"] == "lift below minimum"

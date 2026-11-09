@@ -11,6 +11,7 @@ from .campaign import Campaign
 from .config import GEMINI_MODEL, GEMINI_EMBEDDING_MODEL
 from .discovery_file import validate_discovery
 from .evaluation import valid_trends
+from .trend_rules import check_min_lift
 from .pipeline import code_version, fingerprint
 from .providers import LiveProvider
 
@@ -44,6 +45,7 @@ def sha(text):
 
 def migrate(source, destination, bindings, campaign=None, trends=None):
     source, destination = Path(source), Path(destination)
+    check_min_lift(trends)
     if destination.exists():
         raise ValueError("Migration destination must be a new directory")
     for name, expected in COLLECTION_FILES.items():

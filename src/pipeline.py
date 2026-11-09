@@ -399,6 +399,7 @@ def verify_snapshot(snapshot):
         != Campaign(**snapshot["campaign"]).fingerprint()
     ):
         raise ValueError("Snapshot evidence or campaign was modified")
+    check_min_lift(snapshot["trend_snapshot"])
 
 
 def revise(snapshot, weights=None, priorities=None, reset=False, swap=None):
