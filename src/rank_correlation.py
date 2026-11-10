@@ -7,6 +7,7 @@ Usage:
     python -m src.rank_correlation
 """
 import json
+import re
 
 from .config import DIMENSIONS, ROOT, SCORES
 
@@ -65,9 +66,70 @@ def tool_ranking(weights=None):
     return [handle for handle, _ in ranked]
 
 
-def _read_ranking_file(path):
-    lines = path.read_text().splitlines()
-    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+class EmptyRankingError(ValueError):
+    """The worksheet has no ranking lines yet."""
+
+
+def _normalise_handle(token):
+    """Strip list numbering ("1.", "2)"), force lower case and a leading @."""
+    token = re.sub(r"^\d+[.):-]+", "", token.strip().lower())
+    name = token.lstrip("@")
+    return f"@{name}" if name else ""
+
+
+def parse_blind_ranking(lines, known_handles=None):
+    """Return the human ranking (best first) from worksheet lines, or raise.
+
+    Lines starting with # are worksheet context. A ranking that is empty, has
+    duplicates, names unknown handles, or repeats (or exactly reverses) the
+    worksheet's own listed order is not a human ranking and must not be
+    correlated against the tool. Handles are matched case-insensitively with
+    or without the leading @; a line may start with its rank number
+    ("1. @handle"). The listed-order check needs the worksheet's # lines, and
+    it cannot catch a lightly shuffled copy.
+    """
+    ranking, worksheet_order = [], []
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            first = line.lstrip("#").split()
+            if first and first[0].startswith("@"):
+                worksheet_order.append(_normalise_handle(first[0]))
+            continue
+        tokens = line.split()
+        # "1. @handle" has the rank number as its own token; "1.@handle" does not.
+        token = tokens[0]
+        if not _normalise_handle(token) and len(tokens) > 1:
+            token = tokens[1]
+        ranking.append(_normalise_handle(token))
+    if not ranking:
+        raise EmptyRankingError(
+            "Blind ranking is empty: a person who has not seen the tool's "
+            "output must fill it in, best first, one handle per line"
+        )
+    known = {_normalise_handle(h): h for h in (known_handles or worksheet_order)}
+    if known:
+        unknown = [h for h in ranking if h not in known]
+        if unknown:
+            raise ValueError(f"Blind ranking names unknown handles: {unknown}")
+        ranking = [known[h] for h in ranking]
+        worksheet_order = [known.get(h, h) for h in worksheet_order]
+    duplicates = sorted({h for h in ranking if ranking.count(h) > 1})
+    if duplicates:
+        raise ValueError(f"Blind ranking repeats handles: {duplicates}")
+    if worksheet_order and ranking in (worksheet_order, worksheet_order[::-1]):
+        raise ValueError(
+            "Ranking matches the unranked worksheet order; this is not a human ranking"
+        )
+    return ranking
+
+
+def read_ranking_file(path, known_handles=None):
+    return parse_blind_ranking(
+        path.read_text(encoding="utf-8").splitlines(), known_handles
+    )
 
 
 def main():
@@ -79,7 +141,14 @@ def main():
         return
 
     tool_rank = tool_ranking()
-    human_rank = _read_ranking_file(HUMAN_RANKING_FILE)
+    try:
+        human_rank = read_ranking_file(HUMAN_RANKING_FILE, tool_rank)
+    except EmptyRankingError:
+        print(
+            f"Waiting on {HUMAN_RANKING_FILE}: no ranking lines yet. Add one handle "
+            "per line, best first, below the worksheet comments."
+        )
+        return
 
     only_in_tool, only_in_human = missing_handles(tool_rank, human_rank)
     if only_in_tool:

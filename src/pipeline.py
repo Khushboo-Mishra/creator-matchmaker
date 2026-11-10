@@ -15,6 +15,7 @@ from .campaign import (
     audit_controls,
 )
 from .evaluation import evaluate, dimension, cosine, valid_trends
+from .trend_rules import check_min_lift
 from .ranking import (
     relative_scores,
     select_roster,
@@ -92,6 +93,7 @@ def run(
     if not 0 < reach_exponent <= 5:
         raise ValueError("reach_exponent must be between 0 and 5")
     valid_trends(trend_snapshot, at, allow_synthetic=provider.mode == "synthetic-demo")
+    check_min_lift(trend_snapshot)
     if (
         trend_snapshot is not None
         and trend_snapshot.get("campaign_fingerprint") != campaign.fingerprint()
@@ -397,6 +399,7 @@ def verify_snapshot(snapshot):
         != Campaign(**snapshot["campaign"]).fingerprint()
     ):
         raise ValueError("Snapshot evidence or campaign was modified")
+    check_min_lift(snapshot["trend_snapshot"])
 
 
 def revise(snapshot, weights=None, priorities=None, reset=False, swap=None):

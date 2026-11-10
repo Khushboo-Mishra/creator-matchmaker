@@ -1,10 +1,10 @@
 {
   "source": "Google Trends",
-  "fetched_at": "2026-11-04T14:43:34.313751+00:00",
-  "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean",
+  "fetched_at": "2026-11-05T16:07:09.973660+00:00",
+  "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean by at least min_lift",
   "campaign_fingerprint": "0b3c660cb9cb5601f551d6926febf90e972fa9afa30cc6507ac606f361e9fd9a",
   "filter": {
-    "before": null,
+    "before": "2026-11-01",
     "rule": "Retain only periods whose start date is strictly before the cutoff; no automatic partial-period detection"
   },
   "checked_topics": [
@@ -222,19 +222,18 @@
         {
           "date": "2026-10-25",
           "value": 32.0
-        },
-        {
-          "date": "2026-11-01",
-          "value": 25.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-01"
+      ],
       "retained_period_start_range": {
         "first": "2025-11-02",
-        "last": "2026-11-01"
+        "last": "2026-10-25"
       },
       "previous_interest": 51.19230769230769,
-      "recent_interest": 40.851851851851855
+      "recent_interest": 41.46153846153846,
+      "min_lift": 0.05
     },
     {
       "topic": "mood board",
@@ -450,19 +449,18 @@
         {
           "date": "2026-10-25",
           "value": 55.0
-        },
-        {
-          "date": "2026-11-01",
-          "value": 49.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-01"
+      ],
       "retained_period_start_range": {
         "first": "2025-11-02",
-        "last": "2026-11-01"
+        "last": "2026-10-25"
       },
       "previous_interest": 85.26923076923077,
-      "recent_interest": 63.370370370370374
+      "recent_interest": 63.92307692307692,
+      "min_lift": 0.05
     },
     {
       "topic": "shot list",
@@ -678,19 +676,18 @@
         {
           "date": "2026-10-25",
           "value": 22.0
-        },
-        {
-          "date": "2026-11-01",
-          "value": 24.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-01"
+      ],
       "retained_period_start_range": {
         "first": "2025-11-02",
-        "last": "2026-11-01"
+        "last": "2026-10-25"
       },
       "previous_interest": 63.07692307692308,
-      "recent_interest": 33.592592592592595
+      "recent_interest": 33.96153846153846,
+      "min_lift": 0.05
     },
     {
       "topic": "storyboard",
@@ -906,19 +903,18 @@
         {
           "date": "2026-10-25",
           "value": 62.0
-        },
-        {
-          "date": "2026-11-01",
-          "value": 57.0
         }
       ],
-      "excluded_dates": [],
+      "excluded_dates": [
+        "2026-11-01"
+      ],
       "retained_period_start_range": {
         "first": "2025-11-02",
-        "last": "2026-11-01"
+        "last": "2026-10-25"
       },
       "previous_interest": 78.0,
-      "recent_interest": 66.29629629629629
+      "recent_interest": 66.65384615384616,
+      "min_lift": 0.05
     }
   ],
   "trends": []

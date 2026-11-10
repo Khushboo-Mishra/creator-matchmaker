@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from .campaign import Campaign
 from .config import GEMINI_API_KEY, GEMINI_MODEL
 from . import score_ai
+from .trend_rules import MIN_LIFT, meets_min_lift
 
 
 def propose(campaign):
@@ -145,15 +146,20 @@ def import_exports(manifest, base, before=None):
             "previous_interest": previous,
             "recent_interest": recent,
         }
-        records.append(record)
-        if recent > previous:
+        record["min_lift"] = MIN_LIFT
+        if meets_min_lift(previous, recent):
             rising.append(record)
+        elif previous <= 0:
+            record["not_retained_reason"] = "zero baseline: lift is undefined"
+        else:
+            record["not_retained_reason"] = "lift below minimum"
+        records.append(record)
     if not records:
         raise ValueError("At least one official export is required")
     return {
         "source": "Google Trends",
         "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean",
+        "verification_method": "Operator-supplied official CSV; recent-half mean exceeds previous-half mean by at least min_lift",
         "campaign_fingerprint": manifest["campaign_fingerprint"],
         "filter": {
             "before": before,
